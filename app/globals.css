@@ -1,12 +1,14 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  
+  --cell-size: 60px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #283688;
+    --foreground: #000000;
   }
 }
 
@@ -17,8 +19,8 @@ body {
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  color: #4b5a72;
+  background: #d5b4b8;
   font-family: Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -39,4 +41,22 @@ a {
   html {
     color-scheme: dark;
   }
+}
+
+/* These are MINE:*/
+
+.board-wrapper {
+  justify-items: center;
+}
+
+.board {
+  
+  display: grid;
+  grid-template-rows: repeat(8, var(--cell-size));
+  grid-template-columns: repeat(8, var(--cell-size));
+}
+
+.cell {
+  border: 1px solid #4f4875;
+  background-color: #e69924;
 }
