@@ -1,77 +1,94 @@
-'use client';
+// test page
+import { stringify } from "querystring"
+import { PieceType, Player, PieceTag } from "../lib/game-objects"
 
-import { init } from 'next/dist/compiled/webpack/webpack';
-import Image from 'next/image';
-import { useImmer, useImmerReducer } from 'use-immer';
-// my imports:
-import { Piece, Game, Square, Local } from '../lib/game-objects';
-import { clickReducer, handleClick } from '../lib/ui-helpers';
-import { Dispatch } from 'react';
 
-const initialLocal = new Local();
+        function dashCount(name: string): number {
+            let dashCount: number = 0;
+            // iterate through characters
+            for (let i=0; i < name.length; i++) {
+                if (name.charAt(i) === '-') {
+                    dashCount++;
+                }
+            }
+            return dashCount;
+        }
 
-initialLocal.game.board[0][0].piece = new Piece('hq', 'red', 0, 0);
-initialLocal.game.board[7][7].piece = new Piece('hq', 'blue', 7, 7);
-initialLocal.game.board[4][4].piece = new Piece('infantry', 'blue', 4, 4);
-initialLocal.ui.self = 'blue';
 
-// the main page
+        // takes a name format (player-tag-type) and returns the player
+        function parsePlayer(name: string): Player {
+            // first case two dashes, we have a player string
+            if (dashCount(name) === 2) {
+                // iterate through the characters
+                for (let i = 0; i < name.length; i++) {
+                    if (name.charAt(i) === '-')
+                    {
+                        return name.slice(0, i) as Player;
+                    }
+                }
+            }
+            // if we got here, one or zero dashes, no name
+            return '' as Player;
+        }
+    
+        function parseTag(name: string): PieceTag {
+            let firstDash: number = 0;
+            // iterate through the characters
+            for (let i = 0; i < name.length; i++) {
+                // did we hit a dash?
+                if (name.charAt(i) === '-') {
+                    // is it the first string?
+                    if (dashCount(name) === 1) {
+                        return name.slice(0, i) as PieceTag;
+                    }
+                    else if (firstDash === 0) {
+                        firstDash = i;
+                    }
+                    else {
+                        return name.slice(firstDash + 1, i) as PieceTag;
+                    }
+                }
+            
+            }
+            // if we got here, we have a problem
+            return "" as PieceTag;
+        }
+    
+        function parseType(name: string): PieceType {
+            let firstDash: number = 0;
+            // iterate through the characters
+            for (let i = 0; i < name.length; i++) {
+                // did we hit a dash?
+                if (name.charAt(i) === '-') {
+                    // did we only input two strings
+                    if (dashCount(name) === 1) {
+                        return name.slice(i + 1) as PieceType;
+                    }
+                    else if (firstDash === 0) {
+                        firstDash = i;
+                    }
+                    else {
+                        return name.slice(i +1) as PieceType;
+                    }
+                }
+            }
+            // if we got here, we have a problem
+            return "" as PieceType;
+        }
+
+
+const name: string = 'red-standard-infantry';
+const player = parsePlayer(name);
+const tag = parseTag(name);
+const type = parseType(name);
+
+
 export default function Home() {
-
-    const [local, dispatch] = useImmerReducer(clickReducer, initialLocal)
-
       return (
-        <Board local={local} dispatch={dispatch}/>  
+        <>
+        <p>player = .{player}.</p>
+        <p>tag = .{tag}.</p>
+        <p>type = .{type}.</p>
+        </>
     )
-}
-
-// this renders the board itself
-function Board({ local, dispatch }: BoardProps) {
-    
-    return (
-        <div className="board-wrapper">
-            <div className="board">
-                {local.game.board.map((row) => (
-                    row.map((square) => (
-                        <Cell square={square} local={local} dispatch={dispatch} key={square.getID()}/>
-                    ))
-                ))}
-            </div>
-        </div>
-    )
-}
-
-
-// this renders cells in the board
-// we pass in the square object that is represented in the cell
-function Cell({square, local, dispatch} : CellProps) {
-    
-    // we're going to highlight cells based on the UI state
-    let brightness: number = 1;
-    if (local.ui.potentialMoves.includes(square.getID())) {
-        brightness = 1.25;
-    }
-
-    // this renders the image in the cell if a piece is there
-    return (
-    <div
-        className="cell"
-        onClick ={(event) => handleClick(event, dispatch, local, square)}
-        style={{ filter: `brightness(${brightness})`}}
-    >
-        {square.piece && <Image src={`/pieces/${square.piece.getName()}.webp`} alt={square.piece.getName()} width={60} height={60} />}
-    </div>
-    )
-}
-
-// these are important, we need these for type safety
-type BoardProps = {
-    local:Local
-    dispatch: Dispatch<any>;
-}
-
-type CellProps = {
-    local:Local
-    square:Square
-    dispatch: Dispatch<any>
 }
