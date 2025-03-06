@@ -4,8 +4,8 @@ import { init } from 'next/dist/compiled/webpack/webpack';
 import Image from 'next/image';
 import { useImmer, useImmerReducer } from 'use-immer';
 // my imports:
-import { Piece, Game, Square, Session } from '../lib/game-objects';
-import { clickReducer, handleClick } from '../lib/ui-helpers';
+import { Player, TraySquare, Square, Session } from '../lib/game-objects';
+import { clickReducer, handleBoardClick, handleTrayClick } from '../lib/ui-helpers';
 import { Dispatch } from 'react';
 
 const intialSession = new Session();
@@ -14,11 +14,17 @@ const intialSession = new Session();
 export default function Home() {
 
     const [session, dispatch] = useImmerReducer(clickReducer, intialSession)
-
     console.log(session);
     
       return (
-        <Board session={session} dispatch={dispatch}/>  
+        <div className="board-wrapper">
+            <br></br>
+            <Tray player='red' session={session} dispatch={dispatch}/>
+            <br></br>
+            <Board session={session} dispatch={dispatch}/> 
+            <br></br>
+            <Tray player='blue' session={session} dispatch={dispatch}/>
+        </div>
     )
 }
 
@@ -26,18 +32,15 @@ export default function Home() {
 function Board({ session, dispatch }: BoardProps) {
     
     return (
-        <div className="board-wrapper">
-            <div className="board">
-                {session.game.board.map((row) => (
-                    row.map((square) => (
-                        <Cell square={square} session={session} dispatch={dispatch} key={square.getID()}/>
-                    ))
-                ))}
-            </div>
+        <div className="board">
+            {session.game.board.map((row) => (
+                row.map((square) => (
+                    <Cell square={square} session={session} dispatch={dispatch} key={square.getID()}/>
+                ))
+            ))}
         </div>
     )
 }
-
 
 // this renders cells in the board
 // we pass in the square object that is represented in the cell
@@ -48,20 +51,20 @@ function Cell({square, session, dispatch} : CellProps) {
     if (session.ui.potentialMoves.includes(square.getID())) {
         circleClass = 'circle';
     }
-    let activeBorder: string = '';
-    if (session.ui.activeSquare === square) {
-        activeBorder = '1px dashed white';
+    let activeEffect: string = '';
+    if (square.piece?.isActive) {
+        activeEffect = 'activeSquare';
     }
 
     // this renders the image in the cell if a piece is there
     return (
     <div
-        className='cell'
-        style={{border: `${activeBorder}`}}
-        onClick ={(event) => handleClick(event, dispatch, session, square)}
+        className={`cell ${activeEffect}`}
+        onClick ={(event) => handleBoardClick(event, dispatch, session, square)}
     >
         {square.piece && <Image src={`/pieces/${square.piece.name}.webp`}
                         alt={square.piece.name}
+                        title={square.piece.name}
                         width={100} height={100}
                         style={{transform: `rotate(${square.piece.rotation}deg)`}} />}
         <div className={circleClass}></div>
@@ -69,14 +72,56 @@ function Cell({square, session, dispatch} : CellProps) {
     )
 }
 
+
+// this renders the blue tray
+function Tray({player, session, dispatch} : TrayProps) {
+    return (
+        <div className="tray">
+            {session.game.trays[player].map((traySquare, index) => (
+                <TrayCell traySquare={traySquare} session={session} dispatch={dispatch} key={index}/>
+            ))}
+        </div>
+    )
+}
+
+function TrayCell({traySquare, session, dispatch} : TrayCellProps) {
+    return (
+        <div 
+            className="cell"
+            onClick={(event) => handleTrayClick(event, dispatch, session, traySquare)}
+        >
+            <Image src={`/pieces/${traySquare.name}.webp`}
+                alt={traySquare.name}
+                title={traySquare.name}     
+                width={100} height={100}/>
+            <div className="countText">
+                {traySquare.count} 
+            </div>     
+        </div>
+    )
+}
+
+
 // these are important, we need these for type safety
 type BoardProps = {
     session: Session
     dispatch: Dispatch<any>;
 }
 
+type TrayProps = {
+    session: Session
+    dispatch: Dispatch<any>;
+    player: 'red' | 'blue';
+}
+
 type CellProps = {
     session: Session
     square:Square
+    dispatch: Dispatch<any>
+}
+
+type TrayCellProps = {
+    session: Session
+    traySquare: TraySquare
     dispatch: Dispatch<any>
 }

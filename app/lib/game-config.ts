@@ -1,7 +1,6 @@
 // game board sizes
 export const ROWS: number = 8;
 export const COLUMNS: number = 8;
-export const TRAYSIZE: number = 6;
 
 // initial setup of reserve counts and piece placement
 export const setup = {

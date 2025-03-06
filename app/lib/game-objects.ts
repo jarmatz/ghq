@@ -1,5 +1,5 @@
 import { immerable } from 'immer';
-import { ROWS, COLUMNS, TRAYSIZE, setup } from './game-config';
+import { ROWS, COLUMNS, setup } from './game-config';
 
 // string type restrictions
 export type Player = 'red' | 'blue' | '';
@@ -174,17 +174,27 @@ function setupBoard(boardConfig: {name: string, row: number, column: number}[]):
 
 
 // this creates the tray object
-// unlike createBoard, it does not reutn an empty tray, but one set by game-config
-/*
-type Tray = Square[];
-function createTray(player: Player, trayConfig: {name: string, count: number}[]): Board {
-
+// unlike createBoard, it does not return an empty tray, but one set by game-config
+// likewise, it does not contain squares but a more primitive array of tray objects
+type Tray = TraySquare[];
+export type TraySquare = {
+    name: string,
+    count: number,
+    isActive: boolean
 }
-*/
 
-
-// this creates our initial board based on the configs above
-const initialBoard: Board = setupBoard(setup.boardConfig);
+function createTray(player: Player, trayConfig: { name: string, count: number }[]): Tray {
+    const tray: Tray = [];
+    // iterate through our setup config
+    for (let i = 0; i < trayConfig.length; i++) {
+        tray[i] = {
+            name: player + '-' + trayConfig[i].name,
+            count: trayConfig[i].count,
+            isActive: false
+        };
+    }
+    return tray;
+}
 
 // the main object that stores the current underyling game state
 // shared between client and server
@@ -193,10 +203,15 @@ export class Game {
     [immerable] = true;
     public board: Board;
     public activePlayer: Player;
+    public trays: { blue: Tray, red: Tray };
 
     constructor() {
-        this.board = initialBoard;
+        this.board = setupBoard(setup.boardConfig);
         this.activePlayer = 'red';
+        this.trays = {
+            blue: createTray('blue', setup.trayConfig),
+            red: createTray('red', setup.trayConfig),
+        };
     }
 }
 
@@ -206,15 +221,15 @@ export class UI {
 
     [immerable] = true;
     public isActive: boolean;
+    public activePiece: Piece | null;
     public self: Player;
-    public activeSquare: Square | null;
     public potentialMoves: string[];
 
     constructor() {
         this.isActive = false;
         this.potentialMoves = [];
-        this.activeSquare = null;
         this.self = '';
+        this.activePiece = null;
     }
 }
 
@@ -232,71 +247,5 @@ export class Session {
     ) {
         this.game = game;
         this.ui = ui;
-    }
-}
-
-// this takes as input a piece and then returns possible moves
-// they are returned as an array of strings of the unique square IDs
-export function checkMoves(piece: Piece, board: Board): string[] {
-
-    const potentialMoves: string[] = [];
-    if (piece.tag === 'armored') {
-        return moveTwo(piece, board)
-    }
-    else {
-        return moveOne(piece, board);
-    }
-}
-
-
-// it returns an array with possible moves
-// it takes as input the origin row and column
-export function moveOne(piece: Piece, board: Board): string[] {
-    
-    const potentialMoves: string[] = [];
-    
-    for (let row = -1; row <= 1; row++) {
-        for (let column = -1; column <= 1; column++) {
-            // make sure it's not off the grid
-            if (isOnGrid(row + piece.row, column + piece.column)) {
-                // and not occupied (blissfully this will also exclde the piece's own location)
-                if (!(board[row + piece.row][column + piece.column].isOccupied())){
-                    potentialMoves.push(`${row+piece.row}${column+piece.column}`);
-                }
-            }   
-        }
-    }
-    return potentialMoves;
-}
-
-export function moveTwo(piece: Piece, board: Board): string[] {
-
-    const potentialMoves: string[] = [];
-    // first call move.one
-    potentialMoves.push(...moveOne(piece, board));
-
-    // now do the doubles
-    for (let row = -2; row <= 2; row+= 2) {
-        for (let column = -2; column <= 2; column+= 2) {
-            // make sure it's not off the grid
-            if (isOnGrid(row + piece.row, column + piece.column)) {
-                // check that the square isn't occupied
-                if (!(board[row + piece.row][column + piece.column].isOccupied())){
-                    potentialMoves.push(`${row+piece.row}${column+piece.column}`);
-                }   
-            }
-        }
-    }
-    return potentialMoves;
-}
-
-
-// checks if a row/column are within the board (useful for checking moves)
-export function isOnGrid(row: number, column: number): boolean {
-    if (row >= 0 && row < ROWS && column >= 0 && column < COLUMNS) {
-        return true;
-    }
-    else {
-        return false;
     }
 }
