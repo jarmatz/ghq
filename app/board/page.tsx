@@ -1,29 +1,53 @@
 'use client';
+// the gameboard component
 
 import { init } from 'next/dist/compiled/webpack/webpack';
 import Image from 'next/image';
 import { useImmer, useImmerReducer } from 'use-immer';
+import { useSearchParams } from 'next/navigation';
+import { Dispatch, useEffect } from 'react';
 // my imports:
-import { Player, TraySquare, Square, Session } from '../lib/game-objects';
-import { clickReducer, handleBoardClick, handleTrayClick } from '../lib/ui-helpers';
-import { Dispatch } from 'react';
+import { Player, Reserve, Square, Session } from '@/app/lib/game-objects';
+import { sessionReducer, handleBoardClick, handleTrayClick , handleRotator} from '@/app/lib/ui-helpers';
+import { setBombardments } from '@/app/lib/game-helpers';
+import { UI } from '../lib/ui-objects-deprecated';
 
-const intialSession = new Session();
+const fetchedSession = new Session();
+fetchedSession.game.board = setBombardments(fetchedSession.game.board);
 
 // the main page
-export default function Home() {
+export default function GameBoard({ initialSession = fetchedSession }: InitialSessionProp) {
 
-    const [session, dispatch] = useImmerReducer(clickReducer, intialSession)
+    const [session, dispatch] = useImmerReducer(sessionReducer, initialSession)
     console.log(session);
-    
+    const searchParams = useSearchParams();
+
+    // this effect reads the player search params in the url and sets ui.self to the right value
+    useEffect(() => {
+        const playerParam = searchParams.get('player');
+        if (playerParam === 'blue' || playerParam === 'red') {
+            dispatch({
+                type: 'setSelf',
+                player: playerParam,
+            })
+        }
+    }, []);
+
+    const playerRotation = session.ui.self === 'red' ? 180 : 0;
+
       return (
-        <div className="board-wrapper">
+        <div className="board-wrapper" style={{transform: `rotate(${playerRotation}deg)`}}>
             <br></br>
-            <Tray player='red' session={session} dispatch={dispatch}/>
+            <div className='tray-wrapper' style={{transform: `rotate(${playerRotation}deg)`}}>
+                <Tray player='red' session={session} dispatch={dispatch}/>
+            </div>
             <br></br>
             <Board session={session} dispatch={dispatch}/> 
             <br></br>
-            <Tray player='blue' session={session} dispatch={dispatch}/>
+            <div className='tray-wrapper' style={{transform: `rotate(${playerRotation}deg)`}}>
+                <Tray player='blue' session={session} dispatch={dispatch}/>
+            </div>
+            <br></br>
         </div>
     )
 }
@@ -47,55 +71,102 @@ function Board({ session, dispatch }: BoardProps) {
 function Cell({square, session, dispatch} : CellProps) {
     
     // we're going to highlight cells based on the UI state
-    let circleClass: string = '';
-    if (session.ui.potentialMoves.includes(square.getID())) {
-        circleClass = 'circle';
+    // this option is for rendering centered circles inside the square
+    let circleEffect: string = '';
+    if (session.ui.potentialMoves.includes(square)) {
+        circleEffect += 'circle ';
     }
-    let activeEffect: string = '';
-    if (square.piece?.isActive) {
-        activeEffect = 'activeSquare';
+    if (square.piece === session.ui.activePiece && square.piece && square.piece!.type=== 'artillery') {
+        circleEffect += 'rotatorEffect';
+    }
+    // this option is for affecting the background of the square
+    let backgroundEffect: string = '';
+    if (square.piece === session.ui.activePiece && square.piece) {
+        backgroundEffect += 'activeSquare ';
+    }
+    if (square.bombardment !== '') {
+        backgroundEffect = 'bombardment';
+        backgroundEffect += (square.bombardment + ' ');
     }
 
     // this renders the image in the cell if a piece is there
     return (
     <div
-        className={`cell ${activeEffect}`}
+        className={`cell ${backgroundEffect}`}
         onClick ={(event) => handleBoardClick(event, dispatch, session, square)}
     >
         {square.piece && <Image src={`/pieces/${square.piece.name}.webp`}
                         alt={square.piece.name}
                         title={square.piece.name}
-                        width={100} height={100}
+                        width={200} height={200}
                         style={{transform: `rotate(${square.piece.rotation}deg)`}} />}
-        <div className={circleClass}></div>
+        <div className={circleEffect}></div>
+        {square.piece === session.ui.activePiece && square.piece && square.piece!.type === 'artillery' &&
+            <Rotators square={square} session={session} dispatch={dispatch}/>}
     </div>
     )
 }
 
+function Rotators({ session, dispatch, square }: CellProps) {
+    const rotatorMargin = 27;
+    const rotations = [0, 45, 90, 135, 180, 225, 270, 315];
 
-// this renders the blue tray
+    return (
+        <div style={{ transform: `translate(-12px, -12px)` }}>
+            {rotations.map((rotation, index) => {
+                {/* note the math.round which normalizes to 1 and avoids floating arithmetic problems at 0*/}
+                const translateX = rotatorMargin * Math.round(Math.sin(rotation * Math.PI / 180));
+                const translateY = rotatorMargin * - Math.round(Math.cos(rotation * Math.PI / 180));
+                console.log(`${rotation}: ${translateX}, ${translateY}`)
+                return (
+                    <div
+                        key={index}
+                        className='rotator'
+                        style={{ transform: `translate(${translateX}px, ${translateY}px)` }}
+                        onMouseEnter={(event) => handleRotator(event, dispatch, session, square, rotation)}
+                        onMouseLeave={(event) => handleRotator(event, dispatch, session, square, rotation)}
+                        onClick={(event) => handleRotator(event, dispatch, session, square, rotation)}
+                    ></div>
+                );
+            })}
+        </div>
+    );
+}
+
+
+// this renders the tray
 function Tray({player, session, dispatch} : TrayProps) {
     return (
         <div className="tray">
-            {session.game.trays[player].map((traySquare, index) => (
-                <TrayCell traySquare={traySquare} session={session} dispatch={dispatch} key={index}/>
+            {session.game.trays[player].map((reserve, index) => (
+                <TrayCell reserve={reserve} session={session} dispatch={dispatch} key={index}/>
             ))}
         </div>
     )
 }
 
-function TrayCell({traySquare, session, dispatch} : TrayCellProps) {
+function TrayCell({reserve, session, dispatch} : TrayCellProps) {
+    
+    let activeEffect: string = '';
+    if (reserve === session.ui.activeReserve) {
+        activeEffect = 'activeSquare';
+    }
+    let spentEffect: string = '';
+    if (reserve.count < 1) {
+        spentEffect = 'spentReserve'
+    }
+
     return (
         <div 
-            className="cell"
-            onClick={(event) => handleTrayClick(event, dispatch, session, traySquare)}
+            className={`cell ${activeEffect} ${spentEffect}`}
+            onClick={(event) => handleTrayClick(event, dispatch, session, reserve)}
         >
-            <Image src={`/pieces/${traySquare.name}.webp`}
-                alt={traySquare.name}
-                title={traySquare.name}     
-                width={100} height={100}/>
+            <Image src={`/pieces/${reserve.name}.webp`}
+                alt={reserve.name}
+                title={reserve.name}     
+                width={200} height={200}/>
             <div className="countText">
-                {traySquare.count} 
+                {reserve.count} 
             </div>     
         </div>
     )
@@ -122,6 +193,10 @@ type CellProps = {
 
 type TrayCellProps = {
     session: Session
-    traySquare: TraySquare
+    reserve: Reserve
     dispatch: Dispatch<any>
+}
+
+type InitialSessionProp = {
+    initialSession: Session;
 }

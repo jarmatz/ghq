@@ -1,11 +1,15 @@
+import 'reflect-metadata';
 import { immerable } from 'immer';
 import { ROWS, COLUMNS, setup } from './game-config';
+import { parsePlayer, parseTag, parseType } from './game-helpers';
+import { Type } from 'class-transformer';
 
 // string type restrictions
 export type Player = 'red' | 'blue' | '';
-export type PieceType = 'infantry' | 'hq' | 'paratrooper';
-export type PieceTag = 'standard' | 'armored' | 'heavy' | 'airborne';
+export type PieceType = 'infantry' | 'hq' | 'artillery' | 'undefined';
+export type PieceTag = 'standard' | 'armored' | 'heavy' | 'airborne' | 'undefined';
 export type PieceStatus = 'tray' | 'board' | 'active' | 'inactive' | 'captured';
+export type Bombardment = 'red' | 'blue' | 'both' | '';
 export type Rotation = number;
 
 
@@ -14,7 +18,9 @@ export type Rotation = number;
 export class Square {
     public readonly row: number;
     public readonly column: number;
+    @Type(() => Piece)
     public piece: Piece | null;
+    public bombardment: Bombardment;
 
     constructor(
         row: number,
@@ -23,6 +29,7 @@ export class Square {
         this.row = row;
         this.column = column;
         this.piece = null;
+        this.bombardment = '';
     }
 
     public isOccupied(): boolean {
@@ -41,105 +48,41 @@ export class Piece {
     public readonly player: Player;
     public readonly tag: PieceTag;
     public readonly type: PieceType;
-    public isActive: false;
     public row: number;
     public column: number;
     public rotation: Rotation;
+    public engaged: boolean;
 
     constructor(
         // name must be of format "player-tag-type" to work
         name: string,
         row: number = -1,
         column: number = -1,
-        status: PieceStatus = 'inactive',
     ) {
-        this.name = name;
-        this.type = this.parseType(name);
-        this.tag = this.parseTag(name);
-        this.isActive = false;
-        this.player = this.parsePlayer(name);
+        // this is logic to help class-transformer as it can't take arguments
+        // without it, it will face trouble trying to parse an undefined name
+        if (name) {
+            this.name = name;
+            this.type = parseType(name) as PieceType;
+            this.tag = parseTag(name) as PieceTag;
+            this.player = parsePlayer(name) as Player;
+        }
+        else {
+            this.name = '';
+            this.type = 'undefined';
+            this.tag = 'undefined';
+            this.player = '';
+        }
         this.row = row;
         this.column = column;
         this.rotation = 0;
-    }
-
-    dashCount(name: string): number {
-        let dashCount: number = 0;
-        // iterate through characters
-        for (let i=0; i < name.length; i++) {
-            if (name.charAt(i) === '-') {
-                dashCount++;
-            }
-        }
-        return dashCount;
-    }
-
-    // these functions take a format "player-tag-type" or just "tag-type"...
-    // ... and return the individual strings that compose it
-    parsePlayer(name: string): Player {
-        // first case two dashes, we have a player string
-        if (this.dashCount(name) === 2) {
-            // iterate through the characters
-            for (let i = 0; i < name.length; i++) {
-                if (name.charAt(i) === '-')
-                {
-                    return name.slice(0, i) as Player;
-                }
-            }
-        }
-        // if we got here, one or zero dashes, no name
-        return '' as Player;
-    }
-    
-    parseTag(name: string): PieceTag {
-        let firstDash: number = 0;
-        // iterate through the characters
-        for (let i = 0; i < name.length; i++) {
-            // did we hit a dash?
-            if (name.charAt(i) === '-') {
-                // is it the first string?
-                if (this.dashCount(name) === 1) {
-                    return name.slice(0, i) as PieceTag;
-                }
-                else if (firstDash === 0) {
-                    firstDash = i;
-                }
-                else {
-                    return name.slice(firstDash + 1, i) as PieceTag;
-                }
-            }
-        
-        }
-        // if we got here, we have a problem
-        return "" as PieceTag;
-    }
-    
-    parseType(name: string): PieceType {
-        let firstDash: number = 0;
-        // iterate through the characters
-        for (let i = 0; i < name.length; i++) {
-            // did we hit a dash?
-            if (name.charAt(i) === '-') {
-                // did we only input two strings
-                if (this.dashCount(name) === 1) {
-                    return name.slice(i + 1) as PieceType;
-                }
-                else if (firstDash === 0) {
-                    firstDash = i;
-                }
-                else {
-                    return name.slice(i +1) as PieceType;
-                }
-            }
-        }
-        // if we got here, we have a problem
-        return "" as PieceType;
+        this.engaged = false;
     }
 }
 
 // this is how we build a blank board of squares
 export type Board = Square[][];
-function createBoard(): Board {
+export function createBoard(): Board {
     const board: Board = [];
 
     for (let row = 0; row < ROWS; row++) {
@@ -176,22 +119,37 @@ function setupBoard(boardConfig: {name: string, row: number, column: number}[]):
 // this creates the tray object
 // unlike createBoard, it does not return an empty tray, but one set by game-config
 // likewise, it does not contain squares but a more primitive array of tray objects
-type Tray = TraySquare[];
-export type TraySquare = {
-    name: string,
-    count: number,
-    isActive: boolean
+export type Tray = Reserve[];
+export class Reserve {
+    public readonly name: string;
+    public readonly player: Player;
+    public type: PieceType;
+    public tag: PieceTag;
+    public count: number;
+
+    constructor(name: string, count: number){
+        if (name) {
+            this.name = name;
+            this.type = parseType(name) as PieceType;
+            this.tag = parseTag(name) as PieceTag;
+            this.player = parsePlayer(name) as Player;
+        }
+        else {
+            this.name = '';
+            this.type = 'undefined';
+            this.tag = 'undefined';
+            this.player = '';
+        }
+        this.count = count;
+    }
 }
+
 
 function createTray(player: Player, trayConfig: { name: string, count: number }[]): Tray {
     const tray: Tray = [];
     // iterate through our setup config
     for (let i = 0; i < trayConfig.length; i++) {
-        tray[i] = {
-            name: player + '-' + trayConfig[i].name,
-            count: trayConfig[i].count,
-            isActive: false
-        };
+        tray[i] = new Reserve(player + '-' + trayConfig[i].name, trayConfig[i].count);
     }
     return tray;
 }
@@ -201,13 +159,17 @@ function createTray(player: Player, trayConfig: { name: string, count: number }[
 export class Game {
 
     [immerable] = true;
+    @Type(() => Square)
     public board: Board;
     public activePlayer: Player;
+    @Type(() => Reserve)
     public trays: { blue: Tray, red: Tray };
+    public actionsLeft;
 
     constructor() {
         this.board = setupBoard(setup.boardConfig);
-        this.activePlayer = 'red';
+        this.activePlayer = 'blue';
+        this.actionsLeft = 3;
         this.trays = {
             blue: createTray('blue', setup.trayConfig),
             red: createTray('red', setup.trayConfig),
@@ -222,14 +184,18 @@ export class UI {
     [immerable] = true;
     public isActive: boolean;
     public activePiece: Piece | null;
+    public activeReserve: Reserve | null;
     public self: Player;
-    public potentialMoves: string[];
+    public potentialMoves: Square[];
+    public rotationMemory: number;
 
     constructor() {
         this.isActive = false;
         this.potentialMoves = [];
         this.self = '';
         this.activePiece = null;
+        this.activeReserve = null;
+        this.rotationMemory = 0;
     }
 }
 

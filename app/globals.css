@@ -4,6 +4,9 @@
   
   --cell-size: 80px;
   --board-color: #ffb74b;
+  --piece-blue: #6dbeee;
+  --piece-red: #d95034;
+  --bombardment-size: 6px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -70,11 +73,13 @@ a {
   align-items: center;
   justify-content: center;
   overflow:hidden;
+  position:relative;
 }
 
 .cell img {
   width: 90%;
   height: 90%;
+  position:absolute;
 }
 
 .circle {
@@ -86,12 +91,84 @@ a {
 
 .activeSquare {
 
-  background-color: oklch(from var(--board-color) calc(l * 1.15) c h)
+  background-color: oklch(from var(--board-color) calc(l * 1.20) c h)
 }
 
 .countText {
   position: relative;
   top: -35%;
-  right: 5%;
+  left: 40%;
   font-weight:bold;
+}
+
+.spentReserve img {
+  filter:grayscale(100%) brightness(.75) contrast(2);
+  opacity: .25;
+}
+
+.rotator {
+  aspect-ratio: 1 / 1;
+  width: 27px;
+  background-color: rgb(255, 255, 255, 0);
+  position: absolute;
+  transform-origin: center;
+}
+
+.rotatorEffect {
+  width: 90%;
+  aspect-ratio: 1/1;
+  border-radius: 50%;
+  border: dashed 1px rgb(0, 0, 0);
+  position: absolute;
+}
+
+.bombardmentred {
+  --s: var(--bombardment-size);
+  --c1: var(--board-color);
+  --c2: var(--board-color);
+  --c3: var(--piece-red);
+  
+  --_s: calc(2*var(--s)) calc(2*var(--s));
+  --_g1: var(--_s) conic-gradient(at calc(500%/6) 50%,var(--c3) 25%,#0000 0);
+  --_g2: var(--_s) conic-gradient(at calc(200%/3) 50%,var(--c2) 25%,#0000 0);
+  background:
+    var(--s) var(--s)/var(--_g1),0 0/var(--_g1),
+    var(--s) var(--s)/var(--_g2),0 0/var(--_g2),
+    repeating-conic-gradient(var(--c1) 0 25%,#0000 0 50%) 0 0/var(--_s),
+    linear-gradient(var(--c1) calc(100%/3),var(--c2) 0 calc(200%/3),var(--c3) 0)
+     0 0/var(--s) var(--s);
+}
+
+.bombardmentblue {
+  --s: var(--bombardment-size);
+  --c1: var(--board-color);
+  --c2: var(--board-color);
+  --c3: var(--piece-blue);
+  
+  --_s: calc(2*var(--s)) calc(2*var(--s));
+  --_g1: var(--_s) conic-gradient(at calc(500%/6) 50%,var(--c3) 25%,#0000 0);
+  --_g2: var(--_s) conic-gradient(at calc(200%/3) 50%,var(--c2) 25%,#0000 0);
+  background:
+    var(--s) var(--s)/var(--_g1),0 0/var(--_g1),
+    var(--s) var(--s)/var(--_g2),0 0/var(--_g2),
+    repeating-conic-gradient(var(--c1) 0 25%,#0000 0 50%) 0 0/var(--_s),
+    linear-gradient(var(--c1) calc(100%/3),var(--c2) 0 calc(200%/3),var(--c3) 0)
+     0 0/var(--s) var(--s);
+}
+
+.bombardmentboth {
+  --s: var(--bombardment-size);
+  --c1: var(--board-color);
+  --c2: var(--piece-red);
+  --c3: var(--piece-blue);
+  
+  --_s: calc(2*var(--s)) calc(2*var(--s));
+  --_g1: var(--_s) conic-gradient(at calc(500%/6) 50%,var(--c3) 25%,#0000 0);
+  --_g2: var(--_s) conic-gradient(at calc(200%/3) 50%,var(--c2) 25%,#0000 0);
+  background:
+    var(--s) var(--s)/var(--_g1),0 0/var(--_g1),
+    var(--s) var(--s)/var(--_g2),0 0/var(--_g2),
+    repeating-conic-gradient(var(--c1) 0 25%,#0000 0 50%) 0 0/var(--_s),
+    linear-gradient(var(--c1) calc(100%/3),var(--c2) 0 calc(200%/3),var(--c3) 0)
+     0 0/var(--s) var(--s);
 }
