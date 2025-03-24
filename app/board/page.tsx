@@ -2,34 +2,19 @@
 // the gameboard component
 
 import Image from 'next/image';
-import { useImmer, useImmerReducer } from 'use-immer';
-import { useSearchParams } from 'next/navigation';
 import { Dispatch, useEffect } from 'react';
 // my imports:
-import { Player, Reserve, Square, Session } from '@/app/lib/game-objects';
-import { sessionReducer, handleBoardClick, handleTrayClick , handleRotator} from '@/app/lib/ui-helpers';
+import { Game, Player, Reserve, Square, Session } from '@/app/lib/game-objects';
+import { handleBoardClick, handleTrayClick, handleRotator} from '@/app/lib/ui-helpers';
 import { setBombardments } from '@/app/lib/game-helpers';
 
 const fetchedSession = new Session();
 fetchedSession.game.board = setBombardments(fetchedSession.game.board);
 
 // the main page
-export default function GameBoard({ initialSession = fetchedSession }: InitialSessionProp) {
+export default function GameBoard({ session, dispatch }: GameBoardProp) {
 
-    const [session, dispatch] = useImmerReducer(sessionReducer, initialSession)
     console.log(session);
-    const searchParams = useSearchParams();
-
-    // this effect reads the player search params in the url and sets ui.self to the correct value
-    useEffect(() => {
-        const playerParam = searchParams.get('player');
-        if (playerParam === 'blue' || playerParam === 'red') {
-            dispatch({
-                type: 'setSelf',
-                player: playerParam,
-            })
-        }
-    }, []);
 
     const playerRotation = session.ui.self === 'red' ? 180 : 0;
 
@@ -115,7 +100,6 @@ function Rotators({ session, dispatch, square }: CellProps) {
                 {/* note the math.round which normalizes to 1 and avoids floating arithmetic problems at 0*/}
                 const translateX = rotatorMargin * Math.round(Math.sin(rotation * Math.PI / 180));
                 const translateY = rotatorMargin * - Math.round(Math.cos(rotation * Math.PI / 180));
-                console.log(`${rotation}: ${translateX}, ${translateY}`)
                 return (
                     <div
                         key={index}
@@ -195,6 +179,7 @@ type TrayCellProps = {
     dispatch: Dispatch<any>
 }
 
-type InitialSessionProp = {
-    initialSession: Session;
+type GameBoardProp = {
+    session: Session
+    dispatch: Dispatch<any>
 }

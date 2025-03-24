@@ -11,7 +11,7 @@ export class GameCache {
     public keys: string[] = [];
 
     public set(key: string, value: Game) {
-        // set the value and store the result so we can return it
+        // set the value and store the result so we can return it like the map.set function
         const result = this.map.set(key, value);
         // filter out any matching keys in the array (should be 1 max), in case we're updating an existing cache
         this.keys = this.keys.filter(entry => entry !== key );
@@ -26,6 +26,12 @@ export class GameCache {
     }
 
     public get(key: string): Game | undefined {
+        // a get call should update the keys array order, but only if the entry exists
+        if (this.map.has(key)) {
+            // remove the existing entry and replace it
+            this.keys = this.keys.filter(entry => entry !== key);
+            this.keys.push(key);
+        }
         return this.map.get(key);
     }
 
@@ -42,13 +48,16 @@ export class GameCache {
     // validate (check that the size of keys is the same as map)
     public validate(): boolean {
         if (this.map.size !== this.keys.length) {
+            console.log('gamecache map size does not match key size')
             return false;
         }
         else if (this.map.size > this.maxSize || this.keys.length > this.maxSize) {
+            console.log('gamecache is larger than maxSize')
             return false;
         }
         for (let key of this.keys) {
             if (!this.map.has(key)) {
+                console.log('in gamecache there is a map entry without matching key entry')
                 return false;
             }
         }     

@@ -3,6 +3,7 @@ import { immerable } from 'immer';
 import { ROWS, COLUMNS, setup } from './game-config';
 import { parsePlayer, parseTag, parseType } from './game-helpers';
 import { Type } from 'class-transformer';
+import { Socket } from 'socket.io-client';
 
 // string type restrictions
 export type Player = 'red' | 'blue' | '';
@@ -159,16 +160,19 @@ function createTray(player: Player, trayConfig: { name: string, count: number }[
 
 // the class for a game action that is sent to server for validation
 // it stores the source and target squares as strings of the "getID()" format
+export type Log = GameAction[];
 export class GameAction {
-    public player: Player;
-    public type: string;
-    public source: string;
-    public target: string;
+    public readonly actionType: string;
+    public readonly player: Player;
+    public readonly pieceName: string;
+    public readonly source: string;
+    public readonly target: string;
 
     // some moves don't have a target square so it just copies the source square then for uniformity
-    constructor(player: Player, type: string, source: string, target?: string) {
+    constructor(actionType: string, player: Player, pieceName: string, source: string, target?: string) {
+        this.actionType = actionType;
         this.player = player;
-        this.type = type;
+        this.pieceName = pieceName;
         this.source = source;
         if (target) {
             this.target = target;
@@ -188,6 +192,8 @@ export class Game {
     public board: Board;
     @Type(() => Reserve)
     public trays: { blue: Tray, red: Tray };
+    @Type(() => GameAction)
+    public log: Log = [];
     public activePlayer: Player;
     public actionsLeft;
 
@@ -207,17 +213,15 @@ export class Game {
 export class UI {
 
     [immerable] = true;
-    public self: Player;
-    public isLoaded: boolean;
+    public readonly self: Player;
     public isActive: boolean;
     public activePiece: Piece | null;
     public activeReserve: Reserve | null;
     public potentialMoves: Square[];
     public rotationMemory: number;
 
-    constructor() {
-        this.self = '';
-        this.isLoaded = false;
+    constructor(self: Player = '') {
+        this.self = self;
         this.isActive = false;
         this.potentialMoves = [];
         this.activePiece = null;
@@ -235,12 +239,16 @@ export class Session {
     public game: Game;
     @Type(() => UI)
     public ui: UI;
+    @Type(() => Socket)
+    public readonly socket: Socket;
 
     constructor(
         game: Game = new Game(),
         ui: UI = new UI(),
+        socket: Socket
     ) {
         this.game = game;
         this.ui = ui;
+        this.socket = socket;
     }
 }

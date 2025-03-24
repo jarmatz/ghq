@@ -1,6 +1,7 @@
 import React, { Dispatch } from 'react';
+import { WritableDraft } from 'immer';
 // my imports:
-import { Piece, UI, Board, Tray, Reserve, Square, Session } from './game-objects';
+import { Piece, UI, Board, Tray, Reserve, Square, Session, Game } from './game-objects';
 import { checkMoves, checkPlacements, setBombardments } from './game-helpers';
 import { setEngagements } from './engagement';
 
@@ -112,15 +113,21 @@ export function handleRotator(event: React.MouseEvent, dispatch: Dispatch<any>, 
 // this executes the update to the UI based on the kind of click/input/data push
 // this is the only function that can update the game state/ ui (session object)
 // note the 'session' passed as an argument to the function is really a draft, a la immer vernacular
-export function sessionReducer (session: Session, action: any){
+export function sessionReducer (session: WritableDraft<Session | null>, action: any){
+    
+    // the only dispatch available if session is null, we load the initial game/session
+    if (action.type === 'loadGame') {
+        const newSession = new Session(new Game(), new UI(action.player), action.socket)
+        newSession.game.board = upkeep(newSession.game.board);
+        // SINCE IT'S A NEW INSTANCE WE MUST RETURN IT!!
+        return newSession;
+    }
+    // the check for null before we do anything else
+    if (session === null) {
+        return;
+    }
+    // below this line is only accessible if session is NOT NULL
     switch (action.type) {
-
-        case 'loadGame': {
-            session.ui.self = action.player;
-            session.ui.isLoaded = true;
-            session.game.board = setBombardments(session.game.board);
-            break;
-        }
         case 'activate': {
             // wipe the board + activate the ui
             session.ui = deactivateUI(session.ui);
@@ -172,10 +179,6 @@ export function sessionReducer (session: Session, action: any){
             else {
                 session.ui = deactivateUI(session.ui);
             }
-            // since we've updated the board, set bombardments
-            session.game.board = setBombardments(session.game.board);
-            // the below is currently for debug
-            setEngagements(session.game.board);
             break;
         }
         case 'place': {
@@ -205,8 +208,6 @@ export function sessionReducer (session: Session, action: any){
             }
             // we're done, deactivate
             session.ui = deactivateUI(session.ui);
-            // we changed the board so set bombardments
-            session.game.board = setBombardments(session.game.board);
             break;
         }
         case 'provisionalRotate': {
@@ -221,8 +222,6 @@ export function sessionReducer (session: Session, action: any){
             // place it on the board
             session.game.board[action.piece.row][action.piece.column].piece = newPiece;
             session.ui.activePiece = newPiece;
-            // we adjusted the board so set bombardments
-            session.game.board = setBombardments(session.game.board);
             break;
         }
         case 'revertRotate': {
@@ -237,8 +236,6 @@ export function sessionReducer (session: Session, action: any){
             // place it on the board
             session.game.board[action.piece.row][action.piece.column].piece = newPiece;
             session.ui.activePiece = newPiece;
-            // we reverted the board so set bombardments
-            session.game.board = setBombardments(session.game.board);
             break;
         }
         case 'setRotate': {
@@ -255,11 +252,11 @@ export function sessionReducer (session: Session, action: any){
             session.ui.activePiece = newPiece;
             // deactivate the ui
             session.ui = deactivateUI(session.ui);
-            // update bombardments
-            session.game.board = setBombardments(session.game.board);
             break;
         }
     }
+    // code down here activates for every case, except the initial load
+    session.game.board = upkeep(session.game.board);
 }
 
 function deactivateUI(ui: UI) : UI {
@@ -269,6 +266,12 @@ function deactivateUI(ui: UI) : UI {
     ui.potentialMoves = [];
     ui.rotationMemory = 0;
     return ui;
+}
+
+export function upkeep(board: Board): Board {
+    board = setEngagements(board);
+    board = setBombardments(board);
+    return board;
 }
 
 export function isAlphaNum(input: string): boolean {
