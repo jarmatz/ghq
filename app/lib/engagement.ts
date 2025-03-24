@@ -2,6 +2,9 @@ import { Piece, Square, Board } from './game-objects'
 import { scanBoard, Vector, isOnGrid, deVectorize } from './game-helpers';
 import { sourceMapsEnabled } from 'process';
 
+// this stores a source square (and by definition the piece it contains) plus...
+// ... an array of target squares that are adjacent to it in cardinal directions plus...
+// ... the count of those engagements, which are later used to sort it in an array 
 class PotentialEngagement {
     public source: Square;
     public targets: Square[];
@@ -15,10 +18,13 @@ class PotentialEngagement {
 }
 
 // takes the board, sets engagements, and returns a new board with pieces engaged and rotations set
+// this begoms by asking for an array of potential engagements returned by checkEngagements
+// then it iterates through the array by each potentialengagement's "count"
+// the algo works by setting all pieces with only one engagement first, then two... up to max (4)
 export function setEngagements(board: Board): Board {
 
     const potentialEngagements: PotentialEngagement[] = checkEngagements(board);
-    // iterate over the potential counts, starting at 1 going to max 4 (because )
+    // iterate over the potential counts, starting at 1 going to max 4 (because cardinals)
     for (let count = 1; count <= 4; count++) {
         // now we iterate over the engagements array
         for (let potentialEngagement of potentialEngagements) {
@@ -34,13 +40,13 @@ export function setEngagements(board: Board): Board {
                         // debug
                         console.log(`engaged ${potentialEngagement.source.getID()} to ${target.getID()}`);
                         // update their rotations
-                        // begin by getting the difference vector
+                        // begin by getting the difference vector between their squares
                         let diffVector: Vector = {
                             row: target.row - potentialEngagement.source.row,
                             column: target.column - potentialEngagement.source.column
                         };
                         let sourceAngle: number = deVectorize(diffVector);
-                        // set the rotations
+                        // set the rotations so the pieces point at each other
                         potentialEngagement.source.piece!.rotation = sourceAngle;
                         target.piece!.rotation = (sourceAngle + 180) % 360;
                     }
@@ -73,12 +79,12 @@ export function checkEngagements(board: Board): PotentialEngagement[] {
                 const target = board[source.row + vector.row][source.column + vector.column];
                 // check if it has an opposing infantry
                 if (target.piece?.type === 'infantry' && target.piece.player !== source.piece?.player) {
-                    // add it to the potential engagements
+                    // add it to the potential targets array
                     targets.push(target);
                 }
             }
         }
-        // if we have any targets, create a potential engagement
+        // if we found any targets, create a potential engagement object
         if (targets.length > 0) {
             potentialEngagements.push(new PotentialEngagement(source, targets));
         }
@@ -88,6 +94,7 @@ export function checkEngagements(board: Board): PotentialEngagement[] {
 
 function wipeEngagements(board: Board): Board {
     // wipe the engagements
+    // and reset piece rotations to default
     for (let row of board) {
         for (let square of row) {
             if (square.piece) {

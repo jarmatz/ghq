@@ -1,7 +1,6 @@
 'use client';
 // the gameboard component
 
-import { init } from 'next/dist/compiled/webpack/webpack';
 import Image from 'next/image';
 import { useImmer, useImmerReducer } from 'use-immer';
 import { useSearchParams } from 'next/navigation';
@@ -10,7 +9,6 @@ import { Dispatch, useEffect } from 'react';
 import { Player, Reserve, Square, Session } from '@/app/lib/game-objects';
 import { sessionReducer, handleBoardClick, handleTrayClick , handleRotator} from '@/app/lib/ui-helpers';
 import { setBombardments } from '@/app/lib/game-helpers';
-import { UI } from '../lib/ui-objects-deprecated';
 
 const fetchedSession = new Session();
 fetchedSession.game.board = setBombardments(fetchedSession.game.board);
@@ -22,7 +20,7 @@ export default function GameBoard({ initialSession = fetchedSession }: InitialSe
     console.log(session);
     const searchParams = useSearchParams();
 
-    // this effect reads the player search params in the url and sets ui.self to the right value
+    // this effect reads the player search params in the url and sets ui.self to the correct value
     useEffect(() => {
         const playerParam = searchParams.get('player');
         if (playerParam === 'blue' || playerParam === 'red') {
@@ -77,7 +75,7 @@ function Cell({square, session, dispatch} : CellProps) {
         circleEffect += 'circle ';
     }
     if (square.piece === session.ui.activePiece && square.piece && square.piece!.type=== 'artillery') {
-        circleEffect += 'rotatorEffect';
+        circleEffect += 'rotatorEffect pulse ';
     }
     // this option is for affecting the background of the square
     let backgroundEffect: string = '';

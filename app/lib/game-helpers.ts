@@ -13,8 +13,10 @@ export function checkMoves(piece: Piece, board: Board): Square[] {
     if (piece.tag === 'armored') {
         return move(piece, board, 2)
     }
+    // airborne pieces on the back rank can move anywhere unoccupied / not bombarded
     else if (piece.tag === 'airborne' && piece.row === backRank) {
-        return scanBoard(square => !square.isOccupied(), board);
+        return scanBoard(square => !square.isOccupied() && !(square.bombardment === 'both') &&
+                        !(square.bombardment === invertPlayer(piece.player)), board);
     }
     else {
         return move(piece, board, 1);
@@ -37,7 +39,6 @@ export function checkPlacements(player: Player, board: Board): Square[] {
         }
     }
     return potentialMoves;
-    
 }
 
 // returns an array of potential squares where this piece can move
@@ -48,13 +49,20 @@ export function move(piece: Piece, board: Board, maxMoves: number): Square[] {
             for (let move = 1; move <= maxMoves;) {
                 let targetRow: number = row * move + piece.row, targetColumn: number = column * move + piece.column;
                 // make sure it's not off the grid + the destination is not occupied
-                if (isOnGrid(targetRow, targetColumn) && !(board[targetRow][targetColumn].isOccupied())) {
+                if (isOnGrid(targetRow, targetColumn) && !board[targetRow][targetColumn].isOccupied()) {
+                    // readability
+                    let target: Square = board[targetRow][targetColumn];
                     // once we know it's on grid, make sure it's not bombarded
-                    if (board[targetRow][targetColumn].bombardment !== 'both' &&
-                        board[targetRow][targetColumn].bombardment !== invertPlayer(piece.player)) {
-                        potentialMoves.push(board[targetRow][targetColumn]);
+                    if (target.bombardment !== 'both' &&
+                        target.bombardment !== invertPlayer(piece.player) &&
+                        // and it is not the case that piece is engaged and the target is in zone of control
+                        !(piece.engaged && checkZoneControl(target, invertPlayer(piece.player), board))) {
+                        // hurray we can move here
+                        potentialMoves.push(target);
+                        // if we can move here, let's check the next square over
                         move++
                     }
+                    // if we couldn't move, break the iteration over the "move" variable
                     else {
                         break;
                     }
@@ -141,6 +149,27 @@ export function scanBoard(condition: (square: Square) => boolean, board: Board):
         }
     }
     return resultSquares;
+}
+
+// checks if a square is in an enemy infantry's "zone of control"
+// useful for enforcing movement rules for engaged pieces
+export function checkZoneControl(square: Square, player: Player, board: Board): boolean {  
+
+    // iterate over the cardinal vectors to see if there's opposing infantry
+    const vectors: Vector[] = [{row: 0, column: 1}, {row: 1, column: 0}, {row: 0, column: -1}, {row: -1, column: 0}];
+    for (let vector of vectors) {
+        // safety check if we're on grid
+        if (isOnGrid(square.row + vector.row, square.column + vector.column)) {
+            // get the target square
+            const target: Square = board[square.row + vector.row][square.column + vector.column];
+            // see if it contains infantry of the player we passed in
+            if (target.piece?.type === 'infantry' && target.piece?.player === player) {
+                return true;
+            }
+        }
+    }
+    // if we made it here we found no matches
+    return false;
 }
 
 // this takes an angle and returns a vector object in that direction

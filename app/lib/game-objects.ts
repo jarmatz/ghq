@@ -121,13 +121,15 @@ function setupBoard(boardConfig: {name: string, row: number, column: number}[]):
 // likewise, it does not contain squares but a more primitive array of tray objects
 export type Tray = Reserve[];
 export class Reserve {
+    [immerable] = true;
     public readonly name: string;
     public readonly player: Player;
     public type: PieceType;
     public tag: PieceTag;
     public count: number;
+    public position: number;
 
-    constructor(name: string, count: number){
+    constructor(name: string, count: number, position: number){
         if (name) {
             this.name = name;
             this.type = parseType(name) as PieceType;
@@ -141,6 +143,7 @@ export class Reserve {
             this.player = '';
         }
         this.count = count;
+        this.position = position;
     }
 }
 
@@ -149,9 +152,31 @@ function createTray(player: Player, trayConfig: { name: string, count: number }[
     const tray: Tray = [];
     // iterate through our setup config
     for (let i = 0; i < trayConfig.length; i++) {
-        tray[i] = new Reserve(player + '-' + trayConfig[i].name, trayConfig[i].count);
+        tray[i] = new Reserve(player + '-' + trayConfig[i].name, trayConfig[i].count, i);
     }
     return tray;
+}
+
+// the class for a game action that is sent to server for validation
+// it stores the source and target squares as strings of the "getID()" format
+export class GameAction {
+    public player: Player;
+    public type: string;
+    public source: string;
+    public target: string;
+
+    // some moves don't have a target square so it just copies the source square then for uniformity
+    constructor(player: Player, type: string, source: string, target?: string) {
+        this.player = player;
+        this.type = type;
+        this.source = source;
+        if (target) {
+            this.target = target;
+        }
+        else {
+            this.target = source;
+        }
+    }
 }
 
 // the main object that stores the current underyling game state
@@ -161,9 +186,9 @@ export class Game {
     [immerable] = true;
     @Type(() => Square)
     public board: Board;
-    public activePlayer: Player;
     @Type(() => Reserve)
     public trays: { blue: Tray, red: Tray };
+    public activePlayer: Player;
     public actionsLeft;
 
     constructor() {
@@ -182,17 +207,19 @@ export class Game {
 export class UI {
 
     [immerable] = true;
+    public self: Player;
+    public isLoaded: boolean;
     public isActive: boolean;
     public activePiece: Piece | null;
     public activeReserve: Reserve | null;
-    public self: Player;
     public potentialMoves: Square[];
     public rotationMemory: number;
 
     constructor() {
+        this.self = '';
+        this.isLoaded = false;
         this.isActive = false;
         this.potentialMoves = [];
-        this.self = '';
         this.activePiece = null;
         this.activeReserve = null;
         this.rotationMemory = 0;
@@ -204,7 +231,9 @@ export class UI {
 export class Session {
     
     [immerable] = true;
+    @Type(() => Game)
     public game: Game;
+    @Type(() => UI)
     public ui: UI;
 
     constructor(

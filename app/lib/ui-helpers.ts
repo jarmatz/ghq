@@ -1,4 +1,5 @@
 import React, { Dispatch } from 'react';
+// my imports:
 import { Piece, UI, Board, Tray, Reserve, Square, Session } from './game-objects';
 import { checkMoves, checkPlacements, setBombardments } from './game-helpers';
 import { setEngagements } from './engagement';
@@ -41,6 +42,8 @@ export function handleBoardClick (event: React.MouseEvent, dispatch: Dispatch<an
             dispatch({
                 type: 'place',
                 square: clickedSquare,
+                reserve: session.ui.activeReserve,
+                player: session.ui.activeReserve.player,
                 count: session.ui.activeReserve.count,
             })
             return;
@@ -112,8 +115,10 @@ export function handleRotator(event: React.MouseEvent, dispatch: Dispatch<any>, 
 export function sessionReducer (session: Session, action: any){
     switch (action.type) {
 
-        case 'setSelf': {
+        case 'loadGame': {
             session.ui.self = action.player;
+            session.ui.isLoaded = true;
+            session.game.board = setBombardments(session.game.board);
             break;
         }
         case 'activate': {
@@ -189,7 +194,15 @@ export function sessionReducer (session: Session, action: any){
             // decrement the reserve count
             // we don't do it directly, but rather refer to the count passed in by action
             // this avoids incrementing twice in strict mode
-            session.ui.activeReserve.count = action.count - 1;
+            // similarly, we're having issues sharing references between ui and game when we import game JSON
+            // therefore we will make sure to directly access the tray reference in game class
+            const reservePosition = session.ui.activeReserve.position;
+            if (action.player === 'blue') {
+                session.game.trays.blue[reservePosition].count = action.count - 1;
+            }
+            else if (action.player === 'red') {
+                session.game.trays.red[reservePosition].count = action.count - 1;
+            }
             // we're done, deactivate
             session.ui = deactivateUI(session.ui);
             // we changed the board so set bombardments
