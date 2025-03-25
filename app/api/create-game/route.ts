@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import pool from '@/app/lib/db';
+import { instanceToPlain } from 'class-transformer';
+// my imports:
 import { Game } from '@/app/lib/game-objects';
 import { isAlphaNum } from '@/app/lib/ui-helpers';
-import { instanceToPlain } from 'class-transformer';
 
 export async function POST (req: Request) {
 
@@ -18,9 +19,9 @@ export async function POST (req: Request) {
             return NextResponse.json({ sucess: false, error: 'Names must contain only letters and numbers.' }, { status: 400 });
         }
         
-        const newGame: Game = new Game();
+        const newGame: Game = new Game(name);
         // this is the SQL query to insert, it will return error if name is a duplicate (table settings)
-        await pool.query('INSERT INTO games (name, data) VALUES ($1, $2)', [name, JSON.stringify(instanceToPlain(newGame))]);
+        await pool.query('INSERT INTO games (name, data) VALUES ($1, $2)', [name, instanceToPlain(newGame)]);
         // we did it!
         return NextResponse.json({success: true, name: name}, { status: 201});   
     }

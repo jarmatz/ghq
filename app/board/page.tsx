@@ -8,8 +8,6 @@ import { Game, Player, Reserve, Square, Session } from '@/app/lib/game-objects';
 import { handleBoardClick, handleTrayClick, handleRotator} from '@/app/lib/ui-helpers';
 import { setBombardments } from '@/app/lib/game-helpers';
 
-const fetchedSession = new Session();
-fetchedSession.game.board = setBombardments(fetchedSession.game.board);
 
 // the main page
 export default function GameBoard({ session, dispatch }: GameBoardProp) {

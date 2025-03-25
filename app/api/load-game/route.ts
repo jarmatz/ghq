@@ -1,4 +1,4 @@
-// LOAD GAME ROUTE
+// FETCH LOBBY ROUTE
 
 import { NextResponse } from 'next/server';
 import pool from '@/app/lib/db';
@@ -7,7 +7,6 @@ import { isAlphaNum } from '@/app/lib/ui-helpers';
 export async function POST (req: Request) {
 
     try {
-        
         const body = await req.json();
         const { name } = body;
 

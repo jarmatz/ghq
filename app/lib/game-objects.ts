@@ -32,19 +32,22 @@ export class Square {
         this.piece = null;
         this.bombardment = '';
     }
-
     public isOccupied(): boolean {
         return this.piece !== null;
     }
-
     public getID(): string {
         return `${this.row}${this.column}`;
+    }
+    public load(pieceName: string) {
+        this.piece = new Piece(pieceName, this.row, this.column);
+    }
+    public unload() {
+        this.piece = null;
     }
 }
 
 // this is the class that manages data for individual pieces
 export class Piece {
-
     public readonly name: string;
     public readonly player: Player;
     public readonly tag: PieceTag;
@@ -78,6 +81,9 @@ export class Piece {
         this.column = column;
         this.rotation = 0;
         this.engaged = false;
+    }
+    public getID() {
+        return `${this.row}${this.column}`;
     }
 }
 
@@ -162,24 +168,28 @@ function createTray(player: Player, trayConfig: { name: string, count: number }[
 // it stores the source and target squares as strings of the "getID()" format
 export type Log = GameAction[];
 export class GameAction {
-    public readonly actionType: string;
-    public readonly player: Player;
-    public readonly pieceName: string;
-    public readonly source: string;
-    public readonly target: string;
+    public readonly type: string;
+    @Type(() => Piece)
+    public readonly piece?: Piece;
+    @Type(() => Reserve)
+    public readonly reserve?: Reserve;
+    @Type(() => Square)
+    public readonly source?: Square;
+    @Type(() => Square)
+    public readonly target?: Square;
+    public readonly rotation?: number;
 
-    // some moves don't have a target square so it just copies the source square then for uniformity
-    constructor(actionType: string, player: Player, pieceName: string, source: string, target?: string) {
-        this.actionType = actionType;
-        this.player = player;
-        this.pieceName = pieceName;
+    // we use a destructuring syntax so we can specify which parameters we pass in
+    // new GameAction({ type: 'move', piece: somePiece}) etc.
+    constructor({ type, piece, reserve, source, target, rotation}:
+                { type: string; piece?: Piece; reserve?: Reserve; source?: Square, target?: Square; rotation?: number}
+    ) {
+        this.type = type;
+        this.piece = piece;
+        this.reserve = reserve;
         this.source = source;
-        if (target) {
-            this.target = target;
-        }
-        else {
-            this.target = source;
-        }
+        this.target= target;
+        this.rotation = rotation;
     }
 }
 
@@ -188,6 +198,7 @@ export class GameAction {
 export class Game {
 
     [immerable] = true;
+    public name: string;
     @Type(() => Square)
     public board: Board;
     @Type(() => Reserve)
@@ -197,7 +208,8 @@ export class Game {
     public activePlayer: Player;
     public actionsLeft;
 
-    constructor() {
+    constructor(name: string) {
+        this.name = name;
         this.board = setupBoard(setup.boardConfig);
         this.activePlayer = 'blue';
         this.actionsLeft = 3;
@@ -243,7 +255,7 @@ export class Session {
     public readonly socket: Socket;
 
     constructor(
-        game: Game = new Game(),
+        game: Game = new Game(''),
         ui: UI = new UI(),
         socket: Socket
     ) {

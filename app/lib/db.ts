@@ -1,14 +1,14 @@
-import { Pool } from "pg";
+import pg from "pg";
 
 declare global {
-    var dbPool: Pool | undefined;
+    var dbPool: pg.Pool | undefined;
 }
 
 // this is a singleton pattern
 // we check if the global variable for the pool already exists, then use that
 // else we make a new one
 // prevents creating it over and over again in hot reloading dev environment
-const pool = global.dbPool || new Pool({
+const pool = global.dbPool || new pg.Pool({
     user: process.env.PGUSER,
     host: process.env.PGHOST,
     database: process.env.PGDATABASE,

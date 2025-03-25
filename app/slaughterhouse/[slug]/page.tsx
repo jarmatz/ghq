@@ -1,7 +1,7 @@
 'use client'
 // SLAUGHTERHOUSE LOBBY
 
-import { useEffect, Dispatch } from 'react';
+import { useEffect, useState, Dispatch } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { instanceToPlain, plainToInstance } from 'class-transformer';
 import { Socket } from 'socket.io-client';
@@ -9,52 +9,76 @@ import { useImmerReducer } from 'use-immer';
 // my imports
 import GameBoard from '@/app/board/page';
 import { Session, Game, Player } from '@/app/lib/game-objects';
-import { setBombardments } from '@/app/lib/game-helpers';
 import { getSocket } from '@/app/lib/socket';
 import { sessionReducer } from '@/app/lib/ui-helpers';
 
-let dummySession = new Session();
 
 export default function Page() {
-
-    // get our pathname and search params
-    const pathName: string = usePathname();
-    const gameLobby: string = getSlug(pathName);
-    // get our searchparams
-    const searchParams = useSearchParams();
-    let playerParam = searchParams.get('player');
+    // get our game lobby from the slug
+    const gameLobby: string = getSlug(usePathname());
+    // get our player
+    let playerParam = useSearchParams().get('player');
     // open our socket, kosher out here because it's a singleton
     const socket: Socket = getSocket(gameLobby);
 
     // our session reducer
-    const [session, dispatch] = useImmerReducer(sessionReducer, dummySession);
+    const [session, dispatch] = useImmerReducer<Session | null, any>(sessionReducer, null);
+    // state for loading status
+    const [status, setStatus] = useState('Not loaded.')
 
     // setting up socket listeners and loading the initial gamestate
     useEffect(() => {
+        // safety cleanup
         if (playerParam !== 'red' && playerParam !== 'blue') {
             playerParam = '';
         }
         // our connection event
         if (socket.connected) {
-            onConnect(playerParam, dispatch);
+            console.log(`connected on socket id: ${socket.id}`);
         }
         else {
-            socket.on('connect', () => onConnect(playerParam!, dispatch));
+            socket.on('connect', () => console.log(`connected on socket id: ${socket.id}`));
         }
+        // initial request for a game
+        socket.emit('intialGameRequest', {name: gameLobby});
+
+        // listeners
+        socket.on('initialGameResponse', (data) => loadGame(data, playerParam!, setStatus, dispatch));
     
         return () => {
             socket.off('connect');
+            socket.off('initialGameResponse');
         }
     }, []);
 
     // our components for the page:
     return (
         <div>
-            {session.ui.isLoaded ? <GameBoard session={session} dispatch={dispatch}/> : <p>Not loaded.</p>}
+            {session ? <GameBoard session={session} dispatch={dispatch}/> : <p>{status}</p>}
         </div>
     );
 }
 
+// this loads the initial returned game into a new session by dispatching to reducer
+function loadGame(data: {status: string, game: Game | undefined}, player: string, setStatus: Dispatch<any>, dispatch: Dispatch<any>) {
+
+    // set our status so we can see if game failed to retrieve
+    setStatus(data.status);
+    // somewhat redundant double check here that we had success and the game exists
+    if (data.game && data.status === 'success') {
+        console.log(`loaded game ${data.game.name}`)
+        const game = plainToInstance(Game, data.game);
+        // get our reducer to make our session from this
+        dispatch({
+            type: 'loadGame',
+            player: player,
+            socket: socket,
+            game: game
+        })
+    }
+}
+
+// what we do when the connection is initialized, but called inside component effect
 function onConnect(player: string, dispatch: Dispatch<any>) {
     // safety check
     if (!socket){
@@ -64,7 +88,8 @@ function onConnect(player: string, dispatch: Dispatch<any>) {
     console.log(`connected on socket id: ${socket.id}`);
     dispatch({
         type: 'loadGame',
-        player: player
+        player: player,
+        socket: socket
     })
 }
 

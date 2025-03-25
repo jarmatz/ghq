@@ -55,7 +55,7 @@ export function move(piece: Piece, board: Board, maxMoves: number): Square[] {
                     // once we know it's on grid, make sure it's not bombarded
                     if (target.bombardment !== 'both' &&
                         target.bombardment !== invertPlayer(piece.player) &&
-                        // and it is not the case that piece is engaged and the target is in zone of control
+                        // and it is not the case that both the piece is engaged and the target is in zone of control
                         !(piece.engaged && checkZoneControl(target, invertPlayer(piece.player), board))) {
                         // hurray we can move here
                         potentialMoves.push(target);
@@ -87,7 +87,6 @@ export function setBombardments(board: Board): Board {
     for (let square of artillerySquares) {
         // safety check
         if (square.piece === null) {
-            console.log('break');
             break;
         }
         // set how many squares we are bombarding

@@ -1,5 +1,6 @@
 import React, { Dispatch } from 'react';
 import { WritableDraft } from 'immer';
+import { instanceToPlain, plainToInstance } from 'class-transformer';
 // my imports:
 import { Piece, UI, Board, Tray, Reserve, Square, Session, Game } from './game-objects';
 import { checkMoves, checkPlacements, setBombardments } from './game-helpers';
@@ -110,20 +111,23 @@ export function handleRotator(event: React.MouseEvent, dispatch: Dispatch<any>, 
 }
 
 
-// this executes the update to the UI based on the kind of click/input/data push
-// this is the only function that can update the game state/ ui (session object)
+// this executes the updates to session (both UI and local game data) based on the kind of click/input/data push
+// this is the ONLY function that can update the game state/ui (session object)
 // note the 'session' passed as an argument to the function is really a draft, a la immer vernacular
 export function sessionReducer (session: WritableDraft<Session | null>, action: any){
     
-    // the only dispatch available if session is null, we load the initial game/session
+    // the only dispatch action available if session is null --> we load the initial game/session
     if (action.type === 'loadGame') {
-        const newSession = new Session(new Game(), new UI(action.player), action.socket)
+        // first we re-instantiate the game data, then we make session and upkeep it
+        const newGame = plainToInstance(Game, action.game as Game);
+        const newSession = new Session(newGame, new UI(action.player), action.socket)
         newSession.game.board = upkeep(newSession.game.board);
         // SINCE IT'S A NEW INSTANCE WE MUST RETURN IT!!
         return newSession;
     }
-    // the check for null before we do anything else
+    // the safety check for null before we do anything else
     if (session === null) {
+        console.error('a null session made it deeper into sessionReducer than allowed');
         return;
     }
     // below this line is only accessible if session is NOT NULL

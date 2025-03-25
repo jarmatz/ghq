@@ -1,5 +1,6 @@
 'use client'
 // SPLASH PAGE FOR CREATING AND LOADING GAMES
+// USES API ROUTE (NOT WEB SOCKET) FOR INTERFACING WITH DATABASE
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';

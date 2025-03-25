@@ -48,16 +48,16 @@ export class GameCache {
     // validate (check that the size of keys is the same as map)
     public validate(): boolean {
         if (this.map.size !== this.keys.length) {
-            console.log('gamecache map size does not match key size')
+            console.error('gamecache map size does not match key size')
             return false;
         }
         else if (this.map.size > this.maxSize || this.keys.length > this.maxSize) {
-            console.log('gamecache is larger than maxSize')
+            console.error('gamecache is larger than maxSize')
             return false;
         }
         for (let key of this.keys) {
             if (!this.map.has(key)) {
-                console.log('in gamecache there is a map entry without matching key entry')
+                console.error('in gamecache there is a map entry without matching key entry')
                 return false;
             }
         }     
