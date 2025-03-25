@@ -2,7 +2,7 @@ import React, { Dispatch } from 'react';
 import { WritableDraft } from 'immer';
 import { instanceToPlain, plainToInstance } from 'class-transformer';
 // my imports:
-import { Piece, UI, Board, Tray, Reserve, Square, Session, Game } from './game-objects';
+import { Piece, UI, Board, Tray, Reserve, Square, Session, Game, GameAction } from './game-objects';
 import { checkMoves, checkPlacements, setBombardments } from './game-helpers';
 import { setEngagements } from './engagement';
 
@@ -33,14 +33,14 @@ export function handleBoardClick (event: React.MouseEvent, dispatch: Dispatch<an
     // otherwise are we already active?
     } else if (session.ui.isActive) {
         // check if we can move or place
-        if (session.ui.potentialMoves.includes(clickedSquare) && session.ui.activePiece) {
+        if (session.ui.potentialMoves.includes(clickedSquare.getID()) && session.ui.activePiece) {
             dispatch({
                 type: 'move',
                 square: clickedSquare,
             })
             return;
         }
-        else if (session.ui.potentialMoves.includes(clickedSquare) && session.ui.activeReserve) {
+        else if (session.ui.potentialMoves.includes(clickedSquare.getID()) && session.ui.activeReserve) {
             dispatch({
                 type: 'place',
                 square: clickedSquare,
@@ -67,13 +67,13 @@ export function handleTrayClick (event: React.MouseEvent, dispatch: Dispatch<any
         return;
     }
     // is the reserve active? then we should deactivate it
-    if (clickedReserve === session.ui.activeReserve) {
+    if (clickedReserve.getID() === session.ui.activeReserve?.getID()) {
         dispatch({
             type:'deactivate'
         })
         return;
     }
-    if (clickedReserve !== session.ui.activeReserve) {
+    if (clickedReserve.getID() !== session.ui.activeReserve?.getID()) {
         dispatch({
             type: 'activate',
             reserve: clickedReserve,
@@ -120,8 +120,8 @@ export function sessionReducer (session: WritableDraft<Session | null>, action: 
     if (action.type === 'loadGame') {
         // first we re-instantiate the game data, then we make session and upkeep it
         const newGame = plainToInstance(Game, action.game as Game);
-        const newSession = new Session(newGame, new UI(action.player), action.socket)
-        newSession.game.board = upkeep(newSession.game.board);
+        const newSession = new Session(newGame, new UI(action.player));
+        newSession.game = upkeep(newSession.game);
         // SINCE IT'S A NEW INSTANCE WE MUST RETURN IT!!
         return newSession;
     }
@@ -132,6 +132,18 @@ export function sessionReducer (session: WritableDraft<Session | null>, action: 
     }
     // below this line is only accessible if session is NOT NULL
     switch (action.type) {
+        // up here are server/client actions
+        case 'updateGame': {
+            session.game = plainToInstance(Game, action.game as Game);
+        }
+        case 'revertGame': {
+            session.game = plainToInstance(Game, action.game as Game);
+            session.ui = deactivateUI(session.ui);
+        }
+        case 'clearGameAction': {
+            session.ui.gameAction = null;
+        }
+        // down here are player actions
         case 'activate': {
             // wipe the board + activate the ui
             session.ui = deactivateUI(session.ui);
@@ -165,22 +177,28 @@ export function sessionReducer (session: WritableDraft<Session | null>, action: 
                 break;
             }
             // get our target and source for the move, reassignments for clarity
-            const targetRow: number = action.square.row, targetColumn: number = action.square.column;
-            const sourceRow: number = session.ui.activePiece.row, sourceColumn: number = session.ui.activePiece.column;
+            const target: Square = session.game.board[action.square.row][action.square.column];
+            const source: Square = session.game.board[session.ui.activePiece.row][session.ui.activePiece.column];
             // copy the piece to a clone at the new location, maintaining rotation
-            session.game.board[targetRow][targetColumn].piece = new Piece(session.ui.activePiece.name, targetRow, targetColumn);
-            session.game.board[targetRow][targetColumn].piece.rotation = session.ui.activePiece.rotation;
+            target.load(session.ui.activePiece.name);
+            // safety check
+            if (!target.piece) {
+                console.error('failed to load piece during move case in reducer')
+                break;
+            }
+            target.piece.rotation = session.ui.activePiece.rotation;
             // clear the old location
-            session.game.board[sourceRow][sourceColumn].piece = null;
+            source.unload();
             // if it's artillery, we get a free rotation
-            if (session.game.board[targetRow][targetColumn].piece.type === 'artillery') {
+            if (target.piece.type === 'artillery') {
                 // this is now the active piece, since we will remain active!!!
-                session.ui.activePiece = session.game.board[targetRow][targetColumn].piece;
+                session.ui.activePiece = target.piece;
                 // but we have no moves to make
                 session.ui.potentialMoves = [];
             }
-            // else wipe the ui
+            // else, set our game action and wipe the ui
             else {
+                session.ui.gameAction = new GameAction('move', session.ui.activePiece, null, source, target)
                 session.ui = deactivateUI(session.ui);
             }
             break;
@@ -260,7 +278,7 @@ export function sessionReducer (session: WritableDraft<Session | null>, action: 
         }
     }
     // code down here activates for every case, except the initial load
-    session.game.board = upkeep(session.game.board);
+    session.game = upkeep(session.game);
 }
 
 function deactivateUI(ui: UI) : UI {
@@ -272,10 +290,10 @@ function deactivateUI(ui: UI) : UI {
     return ui;
 }
 
-export function upkeep(board: Board): Board {
-    board = setEngagements(board);
-    board = setBombardments(board);
-    return board;
+export function upkeep(game: Game): Game {
+    game.board = setEngagements(game.board);
+    game.board = setBombardments(game.board);
+    return game;
 }
 
 export function isAlphaNum(input: string): boolean {

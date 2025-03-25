@@ -55,3 +55,14 @@ export async function loadGameResponse(socket: Socket, data: {name: string}) {
 }
 
 // this is a wrapper for updating the database with try/catch
+export async function updateDatabase(game: Game) {
+    try {
+        const result = await pool.query('UPDATE games SET data = $1 WHERE name = $2', [instanceToPlain(game), game.name])
+        if (result.rowCount === 0) {
+            console.log('failed to find game to update in database')
+        }
+    }
+    catch (error) {
+        console.error('error when trying to update database entry', error);
+    }
+}

@@ -3,7 +3,6 @@ import { immerable } from 'immer';
 import { ROWS, COLUMNS, setup } from './game-config';
 import { parsePlayer, parseTag, parseType } from './game-helpers';
 import { Type } from 'class-transformer';
-import { Socket } from 'socket.io-client';
 
 // string type restrictions
 export type Player = 'red' | 'blue' | '';
@@ -17,6 +16,7 @@ export type Rotation = number;
 // this is the class that manages date for individual squares on the board
 // each square has a row and column, and can contain a piece object
 export class Square {
+    [immerable] = true;
     public readonly row: number;
     public readonly column: number;
     @Type(() => Piece)
@@ -82,7 +82,7 @@ export class Piece {
         this.rotation = 0;
         this.engaged = false;
     }
-    public getID() {
+    public getID(): string {
         return `${this.row}${this.column}`;
     }
 }
@@ -152,8 +152,11 @@ export class Reserve {
         this.count = count;
         this.position = position;
     }
+    // returns a tray ID of format b3, r1, b0, etc.
+    public getID(): string {
+        return `${this.player[0]}${this.position}`;
+    }
 }
-
 
 function createTray(player: Player, trayConfig: { name: string, count: number }[]): Tray {
     const tray: Tray = [];
@@ -164,25 +167,40 @@ function createTray(player: Player, trayConfig: { name: string, count: number }[
     return tray;
 }
 
+// we need this to help out with decorators for class-transformer
+export class Trays {
+    [immerable] = true;
+    @Type(() => Reserve)
+    public blue: Reserve[];
+  
+    @Type(() => Reserve)
+    public red: Reserve[];
+
+    constructor() {
+        this.blue = createTray('blue', setup.trayConfig)
+        this.red = createTray('red', setup.trayConfig)
+    }
+}
+
 // the class for a game action that is sent to server for validation
 // it stores the source and target squares as strings of the "getID()" format
 export type Log = GameAction[];
 export class GameAction {
+    [immerable] = true;
     public readonly type: string;
     @Type(() => Piece)
-    public readonly piece?: Piece;
+    public readonly piece: Piece | null;
     @Type(() => Reserve)
-    public readonly reserve?: Reserve;
+    public readonly reserve: Reserve | null;
     @Type(() => Square)
-    public readonly source?: Square;
+    public readonly source: Square | null;
     @Type(() => Square)
-    public readonly target?: Square;
-    public readonly rotation?: number;
+    public readonly target: Square | null;
+    public readonly rotation: number | null;
 
     // we use a destructuring syntax so we can specify which parameters we pass in
     // new GameAction({ type: 'move', piece: somePiece}) etc.
-    constructor({ type, piece, reserve, source, target, rotation}:
-                { type: string; piece?: Piece; reserve?: Reserve; source?: Square, target?: Square; rotation?: number}
+    constructor(type: string, piece: Piece | null, reserve: Reserve | null, source: Square | null, target: Square | null, rotation: number | null = null
     ) {
         this.type = type;
         this.piece = piece;
@@ -200,9 +218,9 @@ export class Game {
     [immerable] = true;
     public name: string;
     @Type(() => Square)
-    public board: Board;
-    @Type(() => Reserve)
-    public trays: { blue: Tray, red: Tray };
+    public board: Square[][];
+    @Type(() => Trays)
+    public trays: Trays;
     @Type(() => GameAction)
     public log: Log = [];
     public activePlayer: Player;
@@ -213,10 +231,7 @@ export class Game {
         this.board = setupBoard(setup.boardConfig);
         this.activePlayer = 'blue';
         this.actionsLeft = 3;
-        this.trays = {
-            blue: createTray('blue', setup.trayConfig),
-            red: createTray('red', setup.trayConfig),
-        };
+        this.trays = new Trays();
     }
 }
 
@@ -229,8 +244,9 @@ export class UI {
     public isActive: boolean;
     public activePiece: Piece | null;
     public activeReserve: Reserve | null;
-    public potentialMoves: Square[];
+    public potentialMoves: string[];
     public rotationMemory: number;
+    public gameAction: GameAction | null;
 
     constructor(self: Player = '') {
         this.self = self;
@@ -239,6 +255,7 @@ export class UI {
         this.activePiece = null;
         this.activeReserve = null;
         this.rotationMemory = 0;
+        this.gameAction = null;
     }
 }
 
@@ -251,16 +268,12 @@ export class Session {
     public game: Game;
     @Type(() => UI)
     public ui: UI;
-    @Type(() => Socket)
-    public readonly socket: Socket;
 
     constructor(
         game: Game = new Game(''),
         ui: UI = new UI(),
-        socket: Socket
     ) {
         this.game = game;
         this.ui = ui;
-        this.socket = socket;
     }
 }

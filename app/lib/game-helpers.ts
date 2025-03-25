@@ -4,28 +4,31 @@ import { ROWS, COLUMNS } from './game-config';
 export type Vector = {row: number, column: number};
 
 // this takes as input a piece and then returns possible moves
-// they are returned as an array of squares
-export function checkMoves(piece: Piece, board: Board): Square[] {
+// they are returned as an array square IDs
+export function checkMoves(piece: Piece, board: Board): string[] {
 
+    let potentialMoves: Square[] = [];
     let backRank: number;
     piece.player === 'blue' ?  backRank = 7 : backRank = 0;
 
     if (piece.tag === 'armored') {
-        return move(piece, board, 2)
+        potentialMoves = move(piece, board, 2)
     }
     // airborne pieces on the back rank can move anywhere unoccupied / not bombarded
     else if (piece.tag === 'airborne' && piece.row === backRank) {
-        return scanBoard(square => !square.isOccupied() && !(square.bombardment === 'both') &&
+        potentialMoves = scanBoard(square => !square.isOccupied() && !(square.bombardment === 'both') &&
                         !(square.bombardment === invertPlayer(piece.player)), board);
     }
     else {
-        return move(piece, board, 1);
+        potentialMoves = move(piece, board, 1);
     }
+    // return the array of IDs
+    return potentialMoves.map((square) => square.getID());
 }
 
 // this takes as input a player and returns potential placements
 // all we need to know is the player, not the piece, since they all behave the same
-export function checkPlacements(player: Player, board: Board): Square[] {
+export function checkPlacements(player: Player, board: Board): string[] {
 
     const potentialMoves: Square[] = [];
     let backRank: number;
@@ -38,7 +41,7 @@ export function checkPlacements(player: Player, board: Board): Square[] {
             potentialMoves.push(board[backRank][column]);
         }
     }
-    return potentialMoves;
+    return potentialMoves.map((square) => square.getID());
 }
 
 // returns an array of potential squares where this piece can move
