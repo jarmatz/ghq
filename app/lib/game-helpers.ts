@@ -22,6 +22,10 @@ export function checkMoves(piece: Piece, board: Board): string[] {
     else {
         potentialMoves = move(piece, board, 1);
     }
+    // for infantry, we exclude squares that are double opposed
+    if (piece.type === 'infantry') {
+        potentialMoves = potentialMoves.filter((square) => !isDoubleOpposed(square, piece.player, board));
+    }
     // return the array of IDs
     return potentialMoves.map((square) => square.getID());
 }
@@ -77,6 +81,28 @@ export function move(piece: Piece, board: Board, maxMoves: number): Square[] {
         }
     }
     return potentialMoves;
+}
+
+// checks if the target square is surrounded by two or more unengaged infantry
+// we prevent opposing infantry from going there
+export function isDoubleOpposed(source: Square, activePlayer: Player, board: Board): boolean {
+    const opposingPlayer: Player = invertPlayer(activePlayer);
+    const vectors: Vector[] = [{row: 0, column: 1}, {row: 1, column: 0}, {row: 0, column: -1}, {row: -1, column: 0}];
+    let count: number = 0;
+
+    for (let vector of vectors) {
+        if (isOnGrid(source.row + vector.row, source.column + vector.column)) {
+            const target = board[source.row + vector.row][source.column + vector.column];
+            // if the target piece is opposing, unengaged, infantry, increment the count
+            if (target.piece?.type === 'infantry' && target.piece?.player === opposingPlayer && target.piece?.engaged === false) {
+                count++;
+            }
+        }
+        if (count >= 2) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // scans the whole board for artillery then correctly sets bombardments in the appropriate squares

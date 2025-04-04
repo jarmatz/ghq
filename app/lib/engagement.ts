@@ -1,6 +1,7 @@
 import { Piece, Square, Board } from './game-objects'
-import { scanBoard, Vector, isOnGrid, deVectorize } from './game-helpers';
+import { scanBoard, Vector, isOnGrid, deVectorize, invertPlayer } from './game-helpers';
 import { sourceMapsEnabled } from 'process';
+import e from 'express';
 
 // this stores a source square (and by definition the piece it contains) plus...
 // ... an array of target squares that are adjacent to it in cardinal directions plus...
@@ -17,8 +18,40 @@ class PotentialEngagement {
     }
 }
 
+// engages a single piece to the enemy it moved next to
+// because we prevent infantry from moving into "double opposed" spaces, the sequencing is always kosher
+// it will always move only next to one opposing infantry
+// if it is already engaged, we instead reset all engagements
+export function engage(source: Square, board: Board): Board {
+    if (source.piece === null) {
+        return board;
+    }
+    const vectors: Vector[] = [{row: 0, column: 1}, {row: 1, column: 0}, {row: 0, column: -1}, {row: -1, column: 0}];
+    // if the piece is not engaged, check for engagements
+    let count: number = 0;
+    for (let vector of vectors) {
+        if (isOnGrid(source.row + vector.row, source.column + vector.column)) {
+            const target: Square = board[source.row + vector.row][source.column + vector.column];
+            if (target.piece?.type === 'infantry' && target.piece?.player === invertPlayer(source.piece.player) && !target.piece.engaged) {
+                console.log('engaged actively');
+                source.piece.engaged = true;
+                target.piece.engaged = true;
+                const sourceAngle: number = deVectorize(vector);
+                const targetAngle: number = (sourceAngle + 180) % 360;
+                source.piece.rotation = sourceAngle;
+                target.piece.rotation = targetAngle;
+                count++;
+                break;
+            }
+        }
+    }
+    // if count is 0, we found no engagements, so it may be a disengage
+    console.log(board[source.row][source.column].piece!.engaged);
+    return board;
+}
+
 // takes the board, sets engagements, and returns a new board with pieces engaged and rotations set
-// this begoms by asking for an array of potential engagements returned by checkEngagements
+// this begins by asking for an array of potential engagements returned by checkEngagements
 // then it iterates through the array by each potentialengagement's "count"
 // the algo works by setting all pieces with only one engagement first, then two... up to max (4)
 export function setEngagements(board: Board): Board {

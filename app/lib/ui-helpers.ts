@@ -4,7 +4,8 @@ import { instanceToPlain, plainToInstance } from 'class-transformer';
 // my imports:
 import { Piece, UI, Board, Tray, Reserve, Square, Session, Game, GameAction } from './game-objects';
 import { checkMoves, checkPlacements, setBombardments } from './game-helpers';
-import { setEngagements } from './engagement';
+import { setEngagements, engage } from './engagement';
+import { checkActiveCaptures } from './capture';
 
 // this handles the logic of what kind of click it was
 export function handleBoardClick (event: React.MouseEvent, dispatch: Dispatch<any>, session: Session, clickedSquare: Square) : void {
@@ -167,6 +168,10 @@ export function sessionReducer (session: WritableDraft<Session | null>, action: 
             break;
         }
         case 'deactivate': {
+            // is there a combo? then this is the user saying they want to keep rotation where it is on a pending action
+            if (session.ui.preAction !== null) {
+                session.ui.gameAction = session.ui.preAction.addRotation(session.ui.rotationMemory);
+            }
             // wipe the board and ui
             session.ui = deactivateUI(session.ui);
             break;
@@ -189,16 +194,28 @@ export function sessionReducer (session: WritableDraft<Session | null>, action: 
             target.piece.rotation = session.ui.activePiece.rotation;
             // clear the old location
             source.unload();
+            // set up the game action
+            const gameAction = new GameAction('move', session.ui.activePiece, null, source, target);
             // if it's artillery, we get a free rotation
             if (target.piece.type === 'artillery') {
                 // this is now the active piece, since we will remain active!!!
                 session.ui.activePiece = target.piece;
                 // but we have no moves to make
                 session.ui.potentialMoves = [];
+                // set up the combo
+                session.ui.preAction = gameAction;
+            }
+            // if it's infantry, check for captures
+            else if (target.piece.type === 'infantry' && checkActiveCaptures(target, session.game.board).length > 0) {
+                // this is now the active piece, since we will remain active!!!
+                session.ui.activePiece = target.piece;
+                session.ui.potentialMoves = [];
+                session.ui.potentialCaptures = checkActiveCaptures(target, session.game.board);
+                session.ui.preAction = gameAction;
             }
             // else, set our game action and wipe the ui
             else {
-                session.ui.gameAction = new GameAction('move', session.ui.activePiece, null, source, target)
+                session.ui.gameAction = gameAction.addRotation(session.ui.activePiece.rotation);
                 session.ui = deactivateUI(session.ui);
             }
             break;
@@ -209,18 +226,23 @@ export function sessionReducer (session: WritableDraft<Session | null>, action: 
                 break;
             }
             // get our target for the placement
-            const targetRow: number = action.square.row, targetColumn: number = action.square.column;
+            const target: Square = session.game.board[action.square.row][action.square.column];
             // instantiate a new piece at the target
-            session.game.board[targetRow][targetColumn].piece = new Piece(session.ui.activeReserve.name, targetRow, targetColumn);
+            target.load(session.ui.activeReserve.name);
+            // safety check, mostly to get typescript checks off our ass
+            if (!target.piece) {
+                console.error('failed to load piece during place case in reducer')
+                break;
+            }
             // if it's red, rotate it
             if (session.ui.activeReserve.player === 'red') {
-                session.game.board[targetRow][targetColumn].piece!.rotation = 180;
+                target.piece.rotation = 180;
             }
             // decrement the reserve count
             // we don't do it directly, but rather refer to the count passed in by action
             // this avoids incrementing twice in strict mode
             // similarly, we're having issues sharing references between ui and game when we import game JSON
-            // therefore we will make sure to directly access the tray reference in game class
+            // therefore we will make sure to directly access the tray reference in game class via position
             const reservePosition = session.ui.activeReserve.position;
             if (action.player === 'blue') {
                 session.game.trays.blue[reservePosition].count = action.count - 1;
@@ -228,8 +250,20 @@ export function sessionReducer (session: WritableDraft<Session | null>, action: 
             else if (action.player === 'red') {
                 session.game.trays.red[reservePosition].count = action.count - 1;
             }
-            // we're done, deactivate
-            session.ui = deactivateUI(session.ui);
+            // set up our gameaction
+            const gameAction = new GameAction('place', null, session.ui.activeReserve, null, target);
+            // if it's artillery, we get a free rotation
+            if (target.piece.type === 'artillery') {
+                // this is now the active piece, since we will remain active!!!
+                session.ui.activePiece = target.piece;
+                // but we have no moves to make
+                session.ui.potentialMoves = [];
+                session.ui.preAction = gameAction;
+            }
+            else {
+                session.ui.gameAction = gameAction.addRotation(target.piece.rotation);
+                session.ui = deactivateUI(session.ui);
+            }
             break;
         }
         case 'provisionalRotate': {
@@ -265,13 +299,18 @@ export function sessionReducer (session: WritableDraft<Session | null>, action: 
             if (session.ui.activePiece === null) {
                 break;
             }
-            // make a new piece to force a re-render
-            const newPiece = new Piece (action.piece.name, action.piece.row, action.piece.column)
-            // set its rotation to the new rotation
-            newPiece.rotation = action.piece.rotation;
-            // place it on the board
-            session.game.board[action.piece.row][action.piece.column].piece = newPiece;
-            session.ui.activePiece = newPiece;
+            // load a new piece into the source square and set its rotation
+            const source: Square = session.game.board[action.piece.row][action.piece.column];
+            source.load(action.piece.name);
+            source.piece!.rotation = action.piece.rotation;
+            // is this a combo?
+            if (session.ui.preAction !== null) {
+                session.ui.gameAction = session.ui.preAction.addRotation(action.piece.rotation)
+                console.log('readied preaction');
+            }
+            else {
+                session.ui.gameAction = new GameAction('rotate', action.piece, null, source, null, action.piece.rotation);
+            }
             // deactivate the ui
             session.ui = deactivateUI(session.ui);
             break;
@@ -286,13 +325,15 @@ function deactivateUI(ui: UI) : UI {
     ui.activePiece = null;
     ui.activeReserve = null;
     ui.potentialMoves = [];
+    ui.potentialCaptures = [];
     ui.rotationMemory = 0;
+    ui.preAction = null;
     return ui;
 }
 
 export function upkeep(game: Game): Game {
-    game.board = setEngagements(game.board);
     game.board = setBombardments(game.board);
+    game.board = setEngagements(game.board);
     return game;
 }
 

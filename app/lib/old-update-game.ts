@@ -15,29 +15,32 @@ export async function updateGame(gameLobby: string, action: GameAction, io: Serv
         console.error('GameAction attempted, but specified game not found');
         return;
     }
-    
+    // re hydrate
     game = plainToInstance(Game, game);
     action = plainToInstance(GameAction, action);
-
-    let message: string = 'reverted game';
-    // we use a proxygame to validate, so we don't override our original game data with a null return
-    let proxyGame = plainToInstance(Game, game);
-    // checking validate here RUNS the command will set proxyGame to NULL if it doesn't validate
-    if (validate(action, proxyGame)) {
-        game = proxyGame;
-        gameCache.set(gameLobby, game);
+    // if our move is validated, execute it, update database, and broadcast to clients
+    if (validate(action, game)) {
+        // execute the move and get the result
+        const updatedGame = execute(action, game);
+        // set the gamecache
+        gameCache.set(gameLobby, updatedGame);
+        // set the db value
         await updateDatabase(game);
-        message = 'updated game';
+        // broadcast the update to the game lobby
+        io.to(gameLobby).emit('update', { message: 'updated game', game: instanceToPlain(updatedGame)});
     }
-    io.to(gameLobby).emit('update', { message: message, game: instanceToPlain(game) });
+    else {
+        // broadcast the original game state, unexecuted, so we can revert it
+        io.to(gameLobby).emit('update', { message: 'reverted game', game: instanceToPlain(game)});
+    }
 }
 
-export function validate(action: GameAction, game: Game): Game | null {
+export function validate(action: GameAction, game: Game): boolean {
 
     // make sure our action came in formatted correctly
     let player: Player = '';
     if ((!action.piece && !action.reserve) || (action.piece && action.reserve)) {
-        return null;
+        return false;
     }
     // get our player
     else if (action.reserve) {
@@ -52,82 +55,44 @@ export function validate(action: GameAction, game: Game): Game | null {
     // ###################################
     switch (action.type) {
         case 'move': {
-            if (!action.piece || !action.source || !action.target || action.rotation === null) {
-                return null;
+            // we should have a piece and source/target squares
+            if (!action.piece || !action.source || !action.target) {
+                return false;
             }
             // the piece should really be where it says it is!
             if (action.piece.name !== game.board[action.source.row][action.source.column].piece?.name) {
-                console.log('2');
-                return null;
+                return false;
             }
             // check that the moves are kosher:
             const potentialMoves: string[] = checkMoves(action.piece, game.board);
-            if (!potentialMoves.includes(action.target.getID())) {
-                console.log('3');
-                return null;
+            if (potentialMoves.includes(action.target.getID())) {
+                return true;
             }
-            // if we made it this far, we execute the action
-            const target: Square = game.board[action.target.row][action.target.column];
-            const source: Square = game.board[action.piece.row][action.piece.column];
-            // load a clone into the target, using rotation passed in by action
-            target.load(action.piece.name);
-            target.piece!.rotation = action.rotation;
-            // clear the source square
-            source.unload();
-            break;
         }
         case 'place': {
-            if (!action.reserve || !action.target || action.rotation === null) {
-                return null;
+            // we should have a reserve and a target square
+            if (!action.reserve || !action.target) {
+                return false;
             }
             // check that we actually have an available reserve
             if (player === 'blue') {
                 if (game.trays.blue[action.reserve.position].count === 0) {
-                    return null;
-                }
-                // otherwise decrement
-                else {
-                    game.trays.blue[action.reserve.position].count--;
+                    return false;
                 }
             }
             else if (player === 'red') {
                 if (game.trays.red[action.reserve.position].count === 0) {
-                    return null;
-                }
-                // otherwise decrement
-                else {
-                    game.trays.red[action.reserve.position].count--;
+                    return false;
                 }
             }
             // check that we can place it in the specified square
             const potentialMoves: string[] = checkPlacements(player, game.board);
-            if (!potentialMoves.includes(action.target.getID())) {
-                return null;
+            if (potentialMoves.includes(action.target.getID())) {
+                return true;
             }
-            // if we made it here, the move is kosher
-            // we've already decremented, so just place the piece
-            const target: Square = game.board[action.target.row][action.target.column];
-            target.load(action.reserve.name);
-            target.piece!.rotation = action.rotation;
-            break;
-        }
-        case 'rotate': {
-            if (!action.source || !action.piece || action.rotation === null) {
-                return null;
-            }
-            // check that the piece is where it says it is
-            if (action.piece.name !== game.board[action.source.row][action.source.column].piece?.name) {
-                return null;
-            }
-            if (action.piece.type !== 'artillery') {
-                return null;
-            }
-            game.board[action.source.row][action.source.column].piece!.rotation = action.rotation;
-            break;
         }
     }
-    game = upkeep(game);
-    return game;
+    return false;
 }
 
 export function execute(action: GameAction, game: Game): Game {

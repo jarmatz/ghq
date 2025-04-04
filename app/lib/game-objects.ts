@@ -209,6 +209,9 @@ export class GameAction {
         this.target= target;
         this.rotation = rotation;
     }
+    addRotation(rotation: number) {
+        return new GameAction(this.type, this.piece, this.reserve, this.source, this.target, rotation);
+    }
 }
 
 // the main object that stores the current underyling game state
@@ -245,16 +248,22 @@ export class UI {
     public activePiece: Piece | null;
     public activeReserve: Reserve | null;
     public potentialMoves: string[];
+    public potentialCaptures: string[];
+    // stores the current piece rotation when actively rotation so we can revert to it as needed:
     public rotationMemory: number;
+    // stores an action readied to be emitted, in the case of a "free" rotation, waiting for the rotation #
+    public preAction: GameAction | null;
     public gameAction: GameAction | null;
 
     constructor(self: Player = '') {
         this.self = self;
         this.isActive = false;
         this.potentialMoves = [];
+        this.potentialCaptures = [];
         this.activePiece = null;
         this.activeReserve = null;
         this.rotationMemory = 0;
+        this.preAction = null;
         this.gameAction = null;
     }
 }
