@@ -6,24 +6,25 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { instanceToPlain, plainToInstance } from 'class-transformer';
 import { Socket } from 'socket.io-client';
 import { useImmerReducer } from 'use-immer';
+import { enableMapSet } from 'immer';
 // my imports
 import GameBoard from '@/app/board/page';
 import { Session, Game, Player } from '@/app/lib/game-objects';
 import { getSocket } from '@/app/lib/socket';
 import { sessionReducer } from '@/app/lib/ui-helpers';
 
+enableMapSet();
 
 export default function Page() {
-    // get our game lobby from the slug
+    // get our game lobby from the slug + our player from the query
     const gameLobby: string = getSlug(usePathname());
-    // get our player
     let playerParam = useSearchParams().get('player');
-    // open our socket, kosher out here because it's a singleton
+    // open our socket, kosher out here because it's a singleton (apparently?)
     const socket: Socket = getSocket(gameLobby);
 
     // our session reducer
     const [session, dispatch] = useImmerReducer<Session | null, any>(sessionReducer, null);
-    // state for loading status
+    // state for the loading status
     const [status, setStatus] = useState('Not loaded.')
 
     // setting up socket listeners and loading the initial gamestate
@@ -40,18 +41,33 @@ export default function Page() {
             socket.on('connect', () => console.log(`connected on socket id: ${socket.id}`));
         }
         // initial request for a game
-        socket.emit('intialGameRequest', {name: gameLobby});
+        socket.emit('loadGameRequest', {name: gameLobby});
 
         // listeners
-        socket.on('initialGameResponse', (data) => loadGame(data, playerParam!, setStatus, dispatch));
+        // waits for initial game response
+        socket.on('loadGameResponse', (data) => loadGame(data, playerParam!, setStatus, dispatch));
+        // waits for updates from the server
+        socket.on('update', (data) => updateGame(data, dispatch));
     
         return () => {
             socket.off('connect');
-            socket.off('initialGameResponse');
+            socket.off('update');
+            socket.off('loadGameResponse');
         }
     }, []);
 
+    // setting up our emit effect for game actions, updates when we update the game action
+    useEffect(() => {
+        // if we have a game action, we fire and clear it, conditional important to prevent infinite loop
+        if (session?.ui.gameAction) {
+            socket.emit('gameAction', instanceToPlain(session.ui.gameAction));
+            dispatch({ type: 'clearGameAction' });
+        }
+    }, [session?.ui.gameAction]);
+
+    // ###################################################
     // our components for the page:
+    // ###################################################
     return (
         <div>
             {session ? <GameBoard session={session} dispatch={dispatch}/> : <p>{status}</p>}
@@ -67,30 +83,32 @@ function loadGame(data: {status: string, game: Game | undefined}, player: string
     // somewhat redundant double check here that we had success and the game exists
     if (data.game && data.status === 'success') {
         console.log(`loaded game ${data.game.name}`)
-        const game = plainToInstance(Game, data.game);
         // get our reducer to make our session from this
         dispatch({
             type: 'loadGame',
             player: player,
-            socket: socket,
-            game: game
+            game: data.game
         })
     }
 }
 
-// what we do when the connection is initialized, but called inside component effect
-function onConnect(player: string, dispatch: Dispatch<any>) {
-    // safety check
-    if (!socket){
-        return;
+function updateGame(data: {message: string, game: Game}, dispatch: Dispatch<any>) {
+
+    // we distinguish between these two actions because we only deactivate the UI if we revert:
+    if (data.message === 'updated game') {
+        dispatch({
+            type: 'updateGame',
+            game: data.game
+        })
+        console.log(data.message, 'from server');
     }
-    // log the connection
-    console.log(`connected on socket id: ${socket.id}`);
-    dispatch({
-        type: 'loadGame',
-        player: player,
-        socket: socket
-    })
+    else if (data.message === 'reverted game') {
+        dispatch({
+            type: 'revertGame',
+            game: data.game
+        })
+        console.log(data.message, 'from server');
+    }
 }
 
 // a utility function, of use here to get the gameLobby from the URL slug

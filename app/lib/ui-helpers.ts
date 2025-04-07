@@ -4,7 +4,7 @@ import { instanceToPlain, plainToInstance } from 'class-transformer';
 // my imports:
 import { Piece, UI, Board, Tray, Reserve, Square, Session, Game, GameAction } from './game-objects';
 import { checkMoves, checkPlacements, setBombardments } from './game-helpers';
-import { setEngagements, engage } from './engagement';
+import { setEngagements, engage, disengageFrom, setDefaultRotations } from './engagement';
 import { checkActiveCaptures } from './capture';
 
 // this handles the logic of what kind of click it was
@@ -194,6 +194,8 @@ export function sessionReducer (session: WritableDraft<Session | null>, action: 
             target.piece.rotation = session.ui.activePiece.rotation;
             // clear the old location
             source.unload();
+            // set any engagements
+            setEngagements(session.game.board, target);
             // set up the game action
             const gameAction = new GameAction('move', session.ui.activePiece, null, source, target);
             // if it's artillery, we get a free rotation
@@ -333,7 +335,7 @@ function deactivateUI(ui: UI) : UI {
 
 export function upkeep(game: Game): Game {
     game.board = setBombardments(game.board);
-    game.board = setEngagements(game.board);
+    game.board = setDefaultRotations(game.board);
     return game;
 }
 

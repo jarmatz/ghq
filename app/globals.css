@@ -122,6 +122,10 @@ a {
   position: absolute;
 }
 
+.crosshairs {
+  position: absolute;
+}
+
 .pulse {
   animation: pulse 1.25s ease-in-out infinite;
 }

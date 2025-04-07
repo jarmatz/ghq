@@ -371,3 +371,24 @@ function dashCount(name: string): number {
     return dashCount;
 }
 
+// takes an ID string and returns a vector object
+export function parseID(id: string): {row: number, column: number} {
+    // check that id is well-formed
+    const regExp = /^\d+$/;
+    if (id.length !== 2 || !regExp.test(id)) {
+        console.error('tried to parse a malformed ID');
+        return {row: -1, column: -1};
+    }
+    const rowDigit: number = Number(id[0])
+    const columnDigit: number = Number(id[1]);
+    return {row: rowDigit, column: columnDigit};
+}
+
+export function defaultRotation(player: Player): number {
+    if (player === 'red') {
+        return 180;
+    }
+    else {
+        return 0;
+    }
+}

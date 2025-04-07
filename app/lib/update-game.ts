@@ -6,6 +6,7 @@ import { checkMoves, checkPlacements } from './game-helpers';
 import { upkeep } from './ui-helpers';
 import gameCache from './game-cache';
 import { getGame, updateDatabase } from './server-helpers';
+import { setEngagements } from './engagement';
 
 
 export async function updateGame(gameLobby: string, action: GameAction, io: Server) {
@@ -74,6 +75,7 @@ export function validate(action: GameAction, game: Game): Game | null {
             target.piece!.rotation = action.rotation;
             // clear the source square
             source.unload();
+            setEngagements(game.board, target);
             break;
         }
         case 'place': {

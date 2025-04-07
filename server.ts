@@ -2,9 +2,12 @@
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
+// nextjs does env variables for us vanilla, but we need a package here in node:
+import dotenv from 'dotenv';
+dotenv.config({path: '.env.local'});
 // my imports:
-import { initialGameResponse } from './app/lib/server-helpers.js';
-
+import { loadGameResponse } from './app/lib/server-helpers';
+import { updateGame } from './app/lib/update-game';
 
 // we need to use express to quickly set up an HTTP server to plug socket.io into
 // this is just the vernacular for doing so
@@ -45,7 +48,10 @@ io.on('connection', async (socket) => {
         return;
     }
     // listeners
-    socket.on('initialGameRequest', (data) => initialGameResponse(socket, data));
+    // loads initial game
+    socket.on('loadGameRequest', (data) => loadGameResponse(socket, data));
+    // listens for client updates then processes and returns its own update
+    socket.on('gameAction', (data) => updateGame(gameLobby, data, io));
 
     socket.on('disconnect', () => {
         console.log(`Socket ${socket.id} left lobby ${gameLobby}`);

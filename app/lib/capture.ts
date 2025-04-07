@@ -7,7 +7,6 @@ import { act } from "react";
 // checks if an infantry piece that moved to a square can capture any surrounding units
 // engagements must be set first!!!
 export function checkActiveCaptures(source: Square, board: Board): string[] {
-    board = setEngagements(board);
     let potentialCaptures: Square[] = [];
     // only unengaged infantry can capture
     if (!source.piece || source.piece.type !== 'infantry' || source.piece.engaged) {

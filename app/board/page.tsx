@@ -54,15 +54,15 @@ function Cell({square, session, dispatch} : CellProps) {
     // we're going to highlight cells based on the UI state
     // this option is for rendering centered circles inside the square
     let circleEffect: string = '';
-    if (session.ui.potentialMoves.includes(square)) {
+    if (session.ui.potentialMoves.includes(square.getID())) {
         circleEffect += 'circle ';
     }
-    if (square.piece === session.ui.activePiece && square.piece && square.piece!.type=== 'artillery') {
+    if (square.piece?.getID() === session.ui.activePiece?.getID() && square.piece && square.piece?.type === 'artillery') {
         circleEffect += 'rotatorEffect pulse ';
     }
     // this option is for affecting the background of the square
     let backgroundEffect: string = '';
-    if (square.piece === session.ui.activePiece && square.piece) {
+    if (square.piece?.getID() === session.ui.activePiece?.getID() && square.piece) {
         backgroundEffect += 'activeSquare ';
     }
     if (square.bombardment !== '') {
@@ -75,15 +75,22 @@ function Cell({square, session, dispatch} : CellProps) {
     <div
         className={`cell ${backgroundEffect}`}
         onClick ={(event) => handleBoardClick(event, dispatch, session, square)}
-    >
+    >   {/*renders the piece image:*/}
         {square.piece && <Image src={`/pieces/${square.piece.name}.webp`}
                         alt={square.piece.name}
                         title={square.piece.name}
                         width={200} height={200}
                         style={{transform: `rotate(${square.piece.rotation}deg)`}} />}
         <div className={circleEffect}></div>
-        {square.piece === session.ui.activePiece && square.piece && square.piece!.type === 'artillery' &&
+        {/*renders invisible rotators if artillery is active:*/}
+        {square.piece?.getID() === session.ui.activePiece?.getID() && square.piece && square.piece?.type === 'artillery' &&
             <Rotators square={square} session={session} dispatch={dispatch}/>}
+        {/*renders crosshairs for active infantry captures: */}
+        {session.ui.potentialCaptures.includes(square.getID()) &&        
+            <Image src={`/crosshairs.webp`} 
+                        alt = 'crosshairs'
+                        width='200' height='200'
+                        className='crosshairs pulse'/> }
     </div>
     )
 }
@@ -128,7 +135,7 @@ function Tray({player, session, dispatch} : TrayProps) {
 function TrayCell({reserve, session, dispatch} : TrayCellProps) {
     
     let activeEffect: string = '';
-    if (reserve === session.ui.activeReserve) {
+    if (reserve.getID() === session.ui.activeReserve?.getID()) {
         activeEffect = 'activeSquare';
     }
     let spentEffect: string = '';

@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"next dev --turbopack\" \"node --loader ts-node/esm server.ts\"",
+    "dev": "concurrently \"next dev --turbopack\" \"npx tsx server.ts\"",
+    "dev-server": "npx tsx server.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -13,6 +14,7 @@
     "@mantine/core": "^7.17.0",
     "@mantine/hooks": "^7.17.0",
     "class-transformer": "^0.5.1",
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "immer": "^10.1.1",
     "immer-reducer": "^0.7.13",
@@ -36,6 +38,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.2.0",
     "ts-node": "^10.9.2",
+    "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   }
 }

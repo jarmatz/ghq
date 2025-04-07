@@ -56,6 +56,7 @@ export class Piece {
     public column: number;
     public rotation: Rotation;
     public engaged: boolean;
+    public engagedWith: string;
 
     constructor(
         // name must be of format "player-tag-type" to work
@@ -81,9 +82,20 @@ export class Piece {
         this.column = column;
         this.rotation = 0;
         this.engaged = false;
+        this.engagedWith = '';
     }
     public getID(): string {
         return `${this.row}${this.column}`;
+    }
+    public engageWith(partner: Piece) {
+        this.engaged = true;
+        this.engagedWith = partner.getID();
+        partner.engaged = true;
+        partner.engagedWith = this.getID();
+    }
+    public disengage() {
+        this.engaged = false;
+        this.engagedWith = '';
     }
 }
 
@@ -224,6 +236,8 @@ export class Game {
     public board: Square[][];
     @Type(() => Trays)
     public trays: Trays;
+    @Type(() => Map)
+    public engagements: Map<string, string>;
     @Type(() => GameAction)
     public log: Log = [];
     public activePlayer: Player;
@@ -235,6 +249,30 @@ export class Game {
         this.activePlayer = 'blue';
         this.actionsLeft = 3;
         this.trays = new Trays();
+        this.engagements = new Map();
+    }
+
+    addEngagement(square1: Square, square2: Square) {
+        this.engagements.set(square1.getID(), square2.getID());
+        this.engagements.set(square1.getID(), square2.getID());
+    }
+    deleteEngagement(square: Square) {
+        // remove the engagement from the map
+        if (this.engagements.has(square.getID())) {
+            let partnerID = this.engagements.get(square.getID());
+            this.engagements.delete(square.getID());
+            if (partnerID) {
+                this.engagements.delete(partnerID);
+            }
+        }
+    }
+    hasEngagement(square1: Square, square2: Square) {
+        if (this.engagements.has(square1.getID()) && this.engagements.has(square2.getID())) {
+            return true;
+        }
+        else {
+            return false;
+        }
     }
 }
 

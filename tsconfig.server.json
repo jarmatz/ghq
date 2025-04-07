@@ -1,10 +1,14 @@
 {
     "extends": "./tsconfig.json",
     "compilerOptions": {
-      "module": "NodeNext",
-      "moduleResolution": "NodeNext",
-      "outDir": "dist"
+      "module": "esnext",
+      "moduleResolution": "bundler",
+      "esModuleInterop": true,
+      "outDir": "dist",
+      "rootDir": ".",
+      "allowJs": true,
+      "strict": true
     },
-    "include": ["server.ts"]
+    "include": ["server.ts", "app/lib/**/*.ts"]
   }
   

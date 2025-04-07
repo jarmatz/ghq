@@ -1,7 +1,5 @@
-import { Piece, Square, Board } from './game-objects'
-import { scanBoard, Vector, isOnGrid, deVectorize, invertPlayer } from './game-helpers';
-import { sourceMapsEnabled } from 'process';
-import e from 'express';
+import { Piece, Square, Board, Game } from './game-objects'
+import { scanBoard, Vector, isOnGrid, deVectorize, invertPlayer, parseID, defaultRotation } from './game-helpers';
 
 // this stores a source square (and by definition the piece it contains) plus...
 // ... an array of target squares that are adjacent to it in cardinal directions plus...
@@ -21,52 +19,112 @@ class PotentialEngagement {
 // engages a single piece to the enemy it moved next to
 // because we prevent infantry from moving into "double opposed" spaces, the sequencing is always kosher
 // it will always move only next to one opposing infantry
-// if it is already engaged, we instead reset all engagements
+// it begins by wiping any existing engagements
 export function engage(source: Square, board: Board): Board {
     if (source.piece === null) {
         return board;
     }
     const vectors: Vector[] = [{row: 0, column: 1}, {row: 1, column: 0}, {row: 0, column: -1}, {row: -1, column: 0}];
-    // if the piece is not engaged, check for engagements
-    let count: number = 0;
+    // if the piece is not engaged, check for an engagement and add it to the list
     for (let vector of vectors) {
         if (isOnGrid(source.row + vector.row, source.column + vector.column)) {
             const target: Square = board[source.row + vector.row][source.column + vector.column];
+            // if we're next to an opposing unengaged infantry
             if (target.piece?.type === 'infantry' && target.piece?.player === invertPlayer(source.piece.player) && !target.piece.engaged) {
                 console.log('engaged actively');
-                source.piece.engaged = true;
-                target.piece.engaged = true;
-                const sourceAngle: number = deVectorize(vector);
+                source.piece.engageWith(target.piece);
+                const diffVector: Vector = {row: target.row - source.row, column: target.column - source.column};
+                const sourceAngle: number = deVectorize(diffVector);
                 const targetAngle: number = (sourceAngle + 180) % 360;
                 source.piece.rotation = sourceAngle;
                 target.piece.rotation = targetAngle;
-                count++;
                 break;
             }
         }
     }
-    // if count is 0, we found no engagements, so it may be a disengage
-    console.log(board[source.row][source.column].piece!.engaged);
     return board;
 }
+
+// disengages the 
+export function disengageFrom(source: Square, board: Board): Board {
+    // find any squares (should only be one, honestly) that are engaged to this one and remove the engagement
+    const engagedSquares: Square[] = scanBoard(square => square.piece?.engagedWith === source.getID(), board);
+    for (const square of engagedSquares) {
+        console.log('active disengage');
+        square.piece?.disengage();
+    }
+    return board;
+}
+
+export function setDefaultRotations(board: Board): Board {
+    const unengagedInfantry: Square[] = scanBoard(square => square.piece?.type === 'infantry' && !square.piece.engaged, board);
+    for (const square of unengagedInfantry) {
+        if (!square.piece) {
+            return board;
+        }
+        square.piece.rotation = defaultRotation(square.piece.player);
+    }
+    return board;
+}
+
+export function processEngagements(game: Game): Game {
+    // start by wiping all engagements to catch removals
+    game.board = wipeEngagements(game.board);
+    // this prevents us from double processing entries:
+    const alreadyProcessed: string[] = [];
+
+    for (const [pieceID, partnerID] of game.engagements) {
+        const piece = game.board[parseID(pieceID).row][parseID(pieceID).column].piece;
+        const partner = game.board[parseID(partnerID).row][parseID(partnerID).column].piece;
+        if (piece === null || partner === null) {
+            console.error('tried to process engagements but could not find pieces on board')
+            return game;
+        }
+        // check if we've already processed, proceed if we haven't
+        if (!alreadyProcessed.includes(pieceID) && !alreadyProcessed.includes(partnerID)) {
+            piece.engaged = true;
+            partner.engaged = true;
+            const diffVector: Vector = {row: partner.row - piece.row, column: partner.column - piece.column}
+            const sourceAngle: number = deVectorize(diffVector);
+            const targetAngle: number = (sourceAngle + 180) % 360;
+            piece.rotation = sourceAngle;
+            partner.rotation = targetAngle;
+            console.log(`processed ${pieceID} to ${partnerID}`);
+            alreadyProcessed.push(pieceID)
+            alreadyProcessed.push(partnerID);
+        }
+    }
+    return game;
+}
+
 
 // takes the board, sets engagements, and returns a new board with pieces engaged and rotations set
 // this begins by asking for an array of potential engagements returned by checkEngagements
 // then it iterates through the array by each potentialengagement's "count"
 // the algo works by setting all pieces with only one engagement first, then two... up to max (4)
-export function setEngagements(board: Board): Board {
+export function setEngagements(board: Board, lastMoved?: Square): Board {
+    let lastMovedID: string;
+    // if it's undefined we just set it to a garbage string
+    if (lastMoved === undefined) {
+        lastMovedID = 'zz';
+    }
+    else {
+        lastMovedID = lastMoved.getID();
+    }
 
     const potentialEngagements: PotentialEngagement[] = checkEngagements(board);
     // iterate over the potential counts, starting at 1 going to max 4 (because cardinals)
     for (let count = 1; count <= 4; count++) {
         // now we iterate over the engagements array
         for (let potentialEngagement of potentialEngagements) {
-            // we only want ones that match the count we're on and are not already engaged
-            if (potentialEngagement.count === count && potentialEngagement.source.piece!.engaged === false) {
+            // we only want ones that match the count we're on and are not already engaged +++ are not the lastmoved
+            if (potentialEngagement.count === count && potentialEngagement.source.piece!.engaged === false && 
+                potentialEngagement.source.getID() !== lastMovedID
+            ) {
                 // iterate through the targets
                 for (let target of potentialEngagement.targets) {
-                    // if we find a target that's not engaged
-                    if (target.piece!.engaged === false) {
+                    // if we find a target that's not engaged +++ not last moved
+                    if (target.piece!.engaged === false && target.getID() !== lastMovedID) {
                         // set both pieces to engaged
                         potentialEngagement.source.piece!.engaged = true;
                         target.piece!.engaged = true;
@@ -83,6 +141,30 @@ export function setEngagements(board: Board): Board {
                         potentialEngagement.source.piece!.rotation = sourceAngle;
                         target.piece!.rotation = (sourceAngle + 180) % 360;
                     }
+                }
+            }
+        }
+    }
+    // handle last moved
+    if (lastMoved !== undefined) {
+        const vectors: Vector[] = [{row: 0, column: 1}, {row: 1, column: 0}, {row: 0, column: -1}, {row: -1, column: 0}];
+        for (let vector of vectors) {
+            if (isOnGrid(lastMoved.row + vector.row, lastMoved.column + vector.column)) {
+                // get the target square
+                const target = board[lastMoved.row + vector.row][lastMoved.column + vector.column];
+                // check if it has an opposing infantry and it's not already engaged
+                if (target.piece?.type === 'infantry' && target.piece?.player !== lastMoved.piece?.player && !target.piece.engaged) {
+                    console.log('engaged last moved piece');
+                    lastMoved.piece!.engaged = true;
+                    target.piece!.engaged = true;
+                    // set rotations
+                    let diffVector: Vector = {
+                        row: target.row - lastMoved.row,
+                        column: target.column - lastMoved.column
+                    };
+                    let sourceAngle: number = deVectorize(diffVector);
+                    lastMoved.piece!.rotation = sourceAngle;
+                    target.piece!.rotation = (sourceAngle + 180) % 360;
                 }
             }
         }
