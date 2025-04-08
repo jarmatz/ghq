@@ -5,8 +5,7 @@ import Image from 'next/image';
 import { Dispatch, useEffect } from 'react';
 // my imports:
 import { Game, Player, Reserve, Square, Session } from '@/app/lib/game-objects';
-import { handleBoardClick, handleTrayClick, handleRotator} from '@/app/lib/ui-helpers';
-import { setBombardments } from '@/app/lib/game-helpers';
+import { handleBoardClick, handleTrayClick, handleRotator, handleCapture} from '@/app/lib/ui-helpers';
 
 
 // the main page
@@ -90,7 +89,11 @@ function Cell({square, session, dispatch} : CellProps) {
             <Image src={`/crosshairs.webp`} 
                         alt = 'crosshairs'
                         width='200' height='200'
-                        className='crosshairs pulse'/> }
+                        className='crosshairs pulse'
+                        onClick={(event) => handleCapture(event, dispatch, session, square)}
+                        onMouseEnter={(event) => handleCapture(event, dispatch, session, square)}
+                        onMouseLeave={(event) => handleCapture(event, dispatch, session, square)}
+                        />}
     </div>
     )
 }

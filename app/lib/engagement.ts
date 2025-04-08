@@ -16,46 +16,6 @@ class PotentialEngagement {
     }
 }
 
-// engages a single piece to the enemy it moved next to
-// because we prevent infantry from moving into "double opposed" spaces, the sequencing is always kosher
-// it will always move only next to one opposing infantry
-// it begins by wiping any existing engagements
-export function engage(source: Square, board: Board): Board {
-    if (source.piece === null) {
-        return board;
-    }
-    const vectors: Vector[] = [{row: 0, column: 1}, {row: 1, column: 0}, {row: 0, column: -1}, {row: -1, column: 0}];
-    // if the piece is not engaged, check for an engagement and add it to the list
-    for (let vector of vectors) {
-        if (isOnGrid(source.row + vector.row, source.column + vector.column)) {
-            const target: Square = board[source.row + vector.row][source.column + vector.column];
-            // if we're next to an opposing unengaged infantry
-            if (target.piece?.type === 'infantry' && target.piece?.player === invertPlayer(source.piece.player) && !target.piece.engaged) {
-                console.log('engaged actively');
-                source.piece.engageWith(target.piece);
-                const diffVector: Vector = {row: target.row - source.row, column: target.column - source.column};
-                const sourceAngle: number = deVectorize(diffVector);
-                const targetAngle: number = (sourceAngle + 180) % 360;
-                source.piece.rotation = sourceAngle;
-                target.piece.rotation = targetAngle;
-                break;
-            }
-        }
-    }
-    return board;
-}
-
-// disengages the 
-export function disengageFrom(source: Square, board: Board): Board {
-    // find any squares (should only be one, honestly) that are engaged to this one and remove the engagement
-    const engagedSquares: Square[] = scanBoard(square => square.piece?.engagedWith === source.getID(), board);
-    for (const square of engagedSquares) {
-        console.log('active disengage');
-        square.piece?.disengage();
-    }
-    return board;
-}
-
 export function setDefaultRotations(board: Board): Board {
     const unengagedInfantry: Square[] = scanBoard(square => square.piece?.type === 'infantry' && !square.piece.engaged, board);
     for (const square of unengagedInfantry) {
@@ -66,37 +26,6 @@ export function setDefaultRotations(board: Board): Board {
     }
     return board;
 }
-
-export function processEngagements(game: Game): Game {
-    // start by wiping all engagements to catch removals
-    game.board = wipeEngagements(game.board);
-    // this prevents us from double processing entries:
-    const alreadyProcessed: string[] = [];
-
-    for (const [pieceID, partnerID] of game.engagements) {
-        const piece = game.board[parseID(pieceID).row][parseID(pieceID).column].piece;
-        const partner = game.board[parseID(partnerID).row][parseID(partnerID).column].piece;
-        if (piece === null || partner === null) {
-            console.error('tried to process engagements but could not find pieces on board')
-            return game;
-        }
-        // check if we've already processed, proceed if we haven't
-        if (!alreadyProcessed.includes(pieceID) && !alreadyProcessed.includes(partnerID)) {
-            piece.engaged = true;
-            partner.engaged = true;
-            const diffVector: Vector = {row: partner.row - piece.row, column: partner.column - piece.column}
-            const sourceAngle: number = deVectorize(diffVector);
-            const targetAngle: number = (sourceAngle + 180) % 360;
-            piece.rotation = sourceAngle;
-            partner.rotation = targetAngle;
-            console.log(`processed ${pieceID} to ${partnerID}`);
-            alreadyProcessed.push(pieceID)
-            alreadyProcessed.push(partnerID);
-        }
-    }
-    return game;
-}
-
 
 // takes the board, sets engagements, and returns a new board with pieces engaged and rotations set
 // this begins by asking for an array of potential engagements returned by checkEngagements

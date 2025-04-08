@@ -56,7 +56,6 @@ export class Piece {
     public column: number;
     public rotation: Rotation;
     public engaged: boolean;
-    public engagedWith: string;
 
     constructor(
         // name must be of format "player-tag-type" to work
@@ -82,20 +81,9 @@ export class Piece {
         this.column = column;
         this.rotation = 0;
         this.engaged = false;
-        this.engagedWith = '';
     }
     public getID(): string {
         return `${this.row}${this.column}`;
-    }
-    public engageWith(partner: Piece) {
-        this.engaged = true;
-        this.engagedWith = partner.getID();
-        partner.engaged = true;
-        partner.engagedWith = this.getID();
-    }
-    public disengage() {
-        this.engaged = false;
-        this.engagedWith = '';
     }
 }
 
@@ -209,10 +197,13 @@ export class GameAction {
     @Type(() => Square)
     public readonly target: Square | null;
     public readonly rotation: number | null;
+    @Type(() => Square)
+    public readonly capture: Square | null;
 
     // we use a destructuring syntax so we can specify which parameters we pass in
     // new GameAction({ type: 'move', piece: somePiece}) etc.
-    constructor(type: string, piece: Piece | null, reserve: Reserve | null, source: Square | null, target: Square | null, rotation: number | null = null
+    constructor(type: string, piece: Piece | null, reserve: Reserve | null, source: Square | null, 
+                target: Square| null, rotation: number | null = null, capture: Square | null = null
     ) {
         this.type = type;
         this.piece = piece;
@@ -220,9 +211,13 @@ export class GameAction {
         this.source = source;
         this.target= target;
         this.rotation = rotation;
+        this.capture = capture;
     }
     addRotation(rotation: number) {
-        return new GameAction(this.type, this.piece, this.reserve, this.source, this.target, rotation);
+        return new GameAction(this.type, this.piece, this.reserve, this.source, this.target, rotation, this.capture);
+    }
+    addCapture(capture: Square) {
+        return new GameAction(this.type, this.piece, this.reserve, this.source, this.target, this.rotation, capture);
     }
 }
 

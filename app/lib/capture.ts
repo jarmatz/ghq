@@ -1,12 +1,13 @@
 import { Square, Board, Player } from "./game-objects";
 import { Vector, isOnGrid, invertPlayer, deVectorize, scanBoard } from "./game-helpers";
 import { setEngagements } from "./engagement";
-import { act } from "react";
 
 // returns an array of ID strings
 // checks if an infantry piece that moved to a square can capture any surrounding units
 // engagements must be set first!!!
 export function checkActiveCaptures(source: Square, board: Board): string[] {
+    // set engagements using lastMoved parameter
+    board = setEngagements(board, source);
     let potentialCaptures: Square[] = [];
     // only unengaged infantry can capture
     if (!source.piece || source.piece.type !== 'infantry' || source.piece.engaged) {
@@ -38,47 +39,69 @@ export function checkActiveCaptures(source: Square, board: Board): string[] {
 }
 
 // engagements must be set first!!
+// infantry must be captures first, then engagements reset, then artillery captured
 export function executePassiveCaptures(activePlayer: Player, board: Board): Board {
     board = setEngagements(board);
-    const captureSquares: Square[] = [];
+    // PHASE 1: INFANTRY CAPTURES
+    let captureSquares: Square[] = [];
+    const infantrySquares: Square[] = [] = scanBoard(square => square.piece?.player === invertPlayer(activePlayer)
+                                                    && square.piece?.type === 'infantry', board);
 
-    // these are all squares with enemy pieces
-    const enemySquares: Square[] = scanBoard(square => square.piece?.player === invertPlayer(activePlayer), board);
-
-    for (let enemySquare of enemySquares) {
-        if (enemySquare.piece?.type === 'infantry') {
-            // check bombardment
-            if (enemySquare.bombardment === 'both' || enemySquare.bombardment === activePlayer) {
-            captureSquares.push(enemySquare);
-            }
+    for (let infantrySquare of infantrySquares) {
+        // check for bombardment capture
+        if (infantrySquare.bombardment === 'both' || infantrySquare.bombardment === activePlayer) {
+            captureSquares.push(infantrySquare);
         }
         // check for infantry capture
         const vectors: Vector[] = [{row: 0, column: 1}, {row: 1, column: 0}, {row: 0, column: -1}, {row: -1, column: 0}];
         for (let vector of vectors) {
-            if (isOnGrid(enemySquare.row + vector.row, enemySquare.column + vector.column)) {
-                // get the target square
-                const target = board[enemySquare.row + vector.row][enemySquare.column + vector.column];
-                // check if it has an opposing infantry that is not engaged
-                if (target.piece && target.piece.type === 'infantry' && !target.piece.engaged) {
-                    // if the enemy is infantry, we capture
-                    if (enemySquare.piece?.type === 'infantry') {
-                        captureSquares.push(enemySquare);
-                        break; // no need to check other vectors for this square
-                    }
-                    // but if it's artillery, we need to check which way it's facing
-                    if (enemySquare.piece?.type === 'artillery') {
-                        // here the artillery is the source angle
-                        const angle: number = deVectorize(vector);
-                        if (enemySquare.piece?.rotation !== angle) {
-                            captureSquares.push(enemySquare);
-                            break;
-                        }
+            if (isOnGrid(infantrySquare.row + vector.row, infantrySquare.column + vector.column)) {
+                const opposition: Square = board[infantrySquare.row + vector.row][infantrySquare.column + vector.column];
+                // check if the opposition square has infantry that is not yet engaged
+                // check that the source infantrySquare enemy is engaged
+                // remember, the opposition here is the active player, the source is the enemy up for capture
+                if (infantrySquare.piece!.engaged && opposition.piece && opposition.piece.type === 'infantry' && !opposition.piece.engaged) {
+                    // we could use a set, but whatever, this is easy too:
+                    if (!captureSquares.includes(infantrySquare)) {
+                        captureSquares.push(infantrySquare);
+                        break; // we don't need to do more in the vector loop
                     }
                 }
             }
         }
     }
-    // now we execute all the captures
+    // EXECUTE ALL INFANTRY CAPTURES
+    for (let captureSquare of captureSquares) {
+        if (captureSquare.piece) {
+            captureSquare.piece === null;
+        }
+    }
+
+    // PHASE 2: ARTILLERY CAPTURES
+    // begin by resetting engagements and capture squares
+    board = setEngagements(board);
+    captureSquares = [];
+    const artillerySquares: Square[] = scanBoard(square => square.piece?.player === invertPlayer(activePlayer)
+                                                && square.piece?.type === 'artillery', board);
+
+    for (let artillerySquare of artillerySquares) {
+        const vectors: Vector[] = [{row: 0, column: 1}, {row: 1, column: 0}, {row: 0, column: -1}, {row: -1, column: 0}];
+        for (let vector of vectors) {
+            if (isOnGrid(artillerySquare.row + vector.row, artillerySquare.column + vector.column)) {
+                const opposition: Square = board[artillerySquare.row + vector.row][artillerySquare.column + vector.column];
+                // check if the opposition square has infantry that is not yet engaged
+                if (opposition.piece && opposition.piece.type === 'infantry' && !opposition.piece.engaged) {
+                    // we can't be directly in front of the artillery
+                    const angle: number = deVectorize(vector);
+                    if (artillerySquare.piece!.rotation === angle && !captureSquares.includes(artillerySquare)) {
+                        captureSquares.push(artillerySquare);
+                        break; // we don't need to do more in the vector loop
+                    }
+                }
+            }
+        }
+    }
+    // now we execute artillery captures
     for (let captureSquare of captureSquares) {
         if (captureSquare.piece) {
             captureSquare.piece === null;

@@ -7,6 +7,7 @@ import { upkeep } from './ui-helpers';
 import gameCache from './game-cache';
 import { getGame, updateDatabase } from './server-helpers';
 import { setEngagements } from './engagement';
+import { checkActiveCaptures } from './capture';
 
 
 export async function updateGame(gameLobby: string, action: GameAction, io: Server) {
@@ -75,7 +76,16 @@ export function validate(action: GameAction, game: Game): Game | null {
             target.piece!.rotation = action.rotation;
             // clear the source square
             source.unload();
-            setEngagements(game.board, target);
+            // check for captures, remember our "target" square is doing the captures
+            if (action.capture !== null) {
+                // some cleanup to help
+                const captured: Square = game.board[action.capture.row][action.capture.column];
+                if (checkActiveCaptures(target, game.board).includes(captured.getID())) {
+                    // capture it!
+                    captured.unload();
+                }
+            }
+            game.board = setEngagements(game.board);
             break;
         }
         case 'place': {
@@ -111,6 +121,32 @@ export function validate(action: GameAction, game: Game): Game | null {
             const target: Square = game.board[action.target.row][action.target.column];
             target.load(action.reserve.name);
             target.piece!.rotation = action.rotation;
+            // check for captures, remember our "target" square is doing the captures
+            if (action.capture !== null) {
+                // some cleanup to help
+                const captured: Square = game.board[action.capture.row][action.capture.column];
+                if (checkActiveCaptures(target, game.board).includes(captured.getID())) {
+                    // capture it!
+                    captured.unload();
+                }
+            }
+            game.board = setEngagements(game.board);
+            break;
+        }
+        // rare case of stationary capture
+        case 'capture': {
+            if (!action.source || !action.capture) {
+                return null;
+            }
+            const captured: Square = game.board[action.capture.row][action.capture.column];
+            const source: Square = game.board[action.source.row][action.source.column];
+            if (checkActiveCaptures(source, game.board).includes(captured.getID())) {
+                captured.unload();
+                game.board = setEngagements(game.board);
+            }
+            else {
+                return null;
+            }
             break;
         }
         case 'rotate': {

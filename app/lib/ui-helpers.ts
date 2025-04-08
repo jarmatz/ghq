@@ -3,8 +3,8 @@ import { WritableDraft } from 'immer';
 import { instanceToPlain, plainToInstance } from 'class-transformer';
 // my imports:
 import { Piece, UI, Board, Tray, Reserve, Square, Session, Game, GameAction } from './game-objects';
-import { checkMoves, checkPlacements, setBombardments } from './game-helpers';
-import { setEngagements, engage, disengageFrom, setDefaultRotations } from './engagement';
+import { checkMoves, checkPlacements, setBombardments, deVectorize, Vector } from './game-helpers';
+import { setEngagements, setDefaultRotations } from './engagement';
 import { checkActiveCaptures } from './capture';
 
 // this handles the logic of what kind of click it was
@@ -111,6 +111,40 @@ export function handleRotator(event: React.MouseEvent, dispatch: Dispatch<any>, 
     }
 }
 
+export function handleCapture(event: React.MouseEvent, dispatch: Dispatch<any>, session: Session, square: Square) : void {
+    
+    if(event.type === 'click') {
+        dispatch({
+            type: 'capture',
+            piece: square.piece,
+            square: square,
+        })
+    }
+    else if (event.type === 'mouseenter') {
+        if (session.ui.activePiece === null) {
+            return;
+        }
+        const diffVector: Vector = {row: square.row - session.ui.activePiece.row, column: square.column - session.ui.activePiece.column};
+        let rotation: number = deVectorize(diffVector);
+        dispatch({
+            type: 'provisionalRotate',
+            rotation: rotation,
+            piece: session.ui.activePiece,
+            square: session.game.board[session.ui.activePiece.row][session.ui.activePiece.column],
+        })
+    }
+    else if (event.type === 'mouseleave') {
+        if (session.ui.activePiece === null) {
+            return;
+        }
+        dispatch({
+            type: 'revertRotate',
+            piece: session.ui.activePiece,
+            square: session.game.board[session.ui.activePiece.row][session.ui.activePiece.column],
+        })
+    }
+}
+
 
 // this executes the updates to session (both UI and local game data) based on the kind of click/input/data push
 // this is the ONLY function that can update the game state/ui (session object)
@@ -157,6 +191,10 @@ export function sessionReducer (session: WritableDraft<Session | null>, action: 
                 session.ui.rotationMemory = action.piece.rotation;
                 // add the checked moves to the potential moves UI so we can render them visually
                 session.ui.potentialMoves = checkMoves(action.piece, session.game.board);
+                if (session.ui.activePiece?.type === 'infantry') {
+                    // add potential captures to the UI in rare case of stationary capture
+                    session.ui.potentialCaptures = checkActiveCaptures(action.square, session.game.board);
+                }
             }
             // otherwise was it from the tray?
             else if (action.source === 'tray') {
@@ -194,8 +232,6 @@ export function sessionReducer (session: WritableDraft<Session | null>, action: 
             target.piece.rotation = session.ui.activePiece.rotation;
             // clear the old location
             source.unload();
-            // set any engagements
-            setEngagements(session.game.board, target);
             // set up the game action
             const gameAction = new GameAction('move', session.ui.activePiece, null, source, target);
             // if it's artillery, we get a free rotation
@@ -217,6 +253,7 @@ export function sessionReducer (session: WritableDraft<Session | null>, action: 
             }
             // else, set our game action and wipe the ui
             else {
+                session.game.board = setEngagements(session.game.board);
                 session.ui.gameAction = gameAction.addRotation(session.ui.activePiece.rotation);
                 session.ui = deactivateUI(session.ui);
             }
@@ -262,17 +299,53 @@ export function sessionReducer (session: WritableDraft<Session | null>, action: 
                 session.ui.potentialMoves = [];
                 session.ui.preAction = gameAction;
             }
+            // if it's infantry, check for captures
+            else if (target.piece.type === 'infantry' && checkActiveCaptures(target, session.game.board).length > 0) {
+                // this is now the active piece, since we will remain active!!!
+                session.ui.activePiece = target.piece;
+                session.ui.potentialMoves = [];
+                session.ui.potentialCaptures = checkActiveCaptures(target, session.game.board);
+                session.ui.preAction = gameAction;
+            }
             else {
+                session.game.board = setEngagements(session.game.board);
                 session.ui.gameAction = gameAction.addRotation(target.piece.rotation);
                 session.ui = deactivateUI(session.ui);
             }
             break;
         }
-        case 'provisionalRotate': {
+        case 'capture': {
             // safety check
             if (session.ui.activePiece === null) {
                 break;
             }
+            // index to the captured square and remove the piece
+            const captured: Square = session.game.board[action.square.row][action.square.column];
+            captured.unload();
+            // reset engagements
+            session.game.board = setEngagements(session.game.board);
+            // is this a combo?
+            if (session.ui.preAction !== null) {
+                // add a rotation to rdy the game action
+                session.ui.preAction = session.ui.preAction.addRotation(session.ui.activePiece.rotation);
+                // dispatch the game action
+                session.ui.gameAction = session.ui.preAction.addCapture(action.square);
+            }
+            // else it is a stationary capture
+            else {
+                const source: Square = session.game.board[session.ui.activePiece.row][session.ui.activePiece.column];
+                session.ui.gameAction = new GameAction('capture', session.ui.activePiece, null, source, action.square, null, action.square);
+            }
+            session.ui = deactivateUI(session.ui);
+            break;
+        }
+        case 'provisionalRotate': {
+            console.log('provisional');
+            // safety check
+            if (session.ui.activePiece === null) {
+                break;
+            }
+            console.log('provisional');
             // make a new piece to force a re-render
             const newPiece = new Piece (action.piece.name, action.piece.row, action.piece.column)
             // set its rotation to the new rotation
@@ -335,7 +408,7 @@ function deactivateUI(ui: UI) : UI {
 
 export function upkeep(game: Game): Game {
     game.board = setBombardments(game.board);
-    game.board = setDefaultRotations(game.board);
+    //game.board = setDefaultRotations(game.board);
     return game;
 }
 
