@@ -56,6 +56,7 @@ export class Piece {
     public column: number;
     public rotation: Rotation;
     public engaged: boolean;
+    public depleted: boolean;
 
     constructor(
         // name must be of format "player-tag-type" to work
@@ -81,6 +82,7 @@ export class Piece {
         this.column = column;
         this.rotation = 0;
         this.engaged = false;
+        this.depleted = false;
     }
     public getID(): string {
         return `${this.row}${this.column}`;
@@ -183,8 +185,6 @@ export class Trays {
 }
 
 // the class for a game action that is sent to server for validation
-// it stores the source and target squares as strings of the "getID()" format
-export type Log = GameAction[];
 export class GameAction {
     [immerable] = true;
     public readonly type: string;
@@ -221,6 +221,26 @@ export class GameAction {
     }
 }
 
+// the class that stores an entry in the gamelog
+export class Log {
+    [immerable] = true;
+
+    public text: string;
+    @Type(() => Square)
+    public snapshot: Square[][];
+    // stored as string IDs:
+    public activeIDs: string[];
+    // likewise:
+    public captureIDs: string[];
+
+    constructor(text: string, snapshot: Square[][], activeIDs: string[], captureIDs: string[]) {
+        this.text = text;
+        this.snapshot = snapshot;
+        this.activeIDs = activeIDs;
+        this.captureIDs = captureIDs;
+    }
+}
+
 // the main object that stores the current underyling game state
 // shared between client and server
 export class Game {
@@ -231,43 +251,22 @@ export class Game {
     public board: Square[][];
     @Type(() => Trays)
     public trays: Trays;
-    @Type(() => Map)
-    public engagements: Map<string, string>;
-    @Type(() => GameAction)
-    public log: Log = [];
+    @Type(() => Log)
+    public log: Log[];
     public activePlayer: Player;
     public actionsLeft;
+    public winner: Player;
+    public hqVictory: boolean;
 
-    constructor(name: string) {
+    constructor(name: string, hqVictory: boolean = false) {
         this.name = name;
         this.board = setupBoard(setup.boardConfig);
         this.activePlayer = 'blue';
         this.actionsLeft = 3;
         this.trays = new Trays();
-        this.engagements = new Map();
-    }
-
-    addEngagement(square1: Square, square2: Square) {
-        this.engagements.set(square1.getID(), square2.getID());
-        this.engagements.set(square1.getID(), square2.getID());
-    }
-    deleteEngagement(square: Square) {
-        // remove the engagement from the map
-        if (this.engagements.has(square.getID())) {
-            let partnerID = this.engagements.get(square.getID());
-            this.engagements.delete(square.getID());
-            if (partnerID) {
-                this.engagements.delete(partnerID);
-            }
-        }
-    }
-    hasEngagement(square1: Square, square2: Square) {
-        if (this.engagements.has(square1.getID()) && this.engagements.has(square2.getID())) {
-            return true;
-        }
-        else {
-            return false;
-        }
+        this.log = [];
+        this.winner = '';
+        this.hqVictory = hqVictory;
     }
 }
 
@@ -277,27 +276,37 @@ export class UI {
 
     [immerable] = true;
     public readonly self: Player;
-    public isActive: boolean;
+    public logRender: number | null;
     public activePiece: Piece | null;
     public activeReserve: Reserve | null;
     public potentialMoves: string[];
     public potentialCaptures: string[];
+    public upkeepCaptures: string[];
     // stores the current piece rotation when actively rotation so we can revert to it as needed:
     public rotationMemory: number;
-    // stores an action readied to be emitted, in the case of a "free" rotation, waiting for the rotation #
+    // stores an action readied to be emitted, in the case of a "free" rotation or capture
     public preAction: GameAction | null;
     public gameAction: GameAction | null;
 
     constructor(self: Player = '') {
         this.self = self;
-        this.isActive = false;
+        this.logRender = null;
         this.potentialMoves = [];
         this.potentialCaptures = [];
+        this.upkeepCaptures = [];
         this.activePiece = null;
         this.activeReserve = null;
         this.rotationMemory = 0;
         this.preAction = null;
         this.gameAction = null;
+    }
+    isActive() {
+        if (this.activePiece === null && this.activeReserve === null) {
+            return false;
+        }
+        else {
+            return true;
+        }
     }
 }
 
@@ -317,5 +326,15 @@ export class Session {
     ) {
         this.game = game;
         this.ui = ui;
+    }
+
+    getBoardForRender(): Board {
+        if (this.ui.logRender === null) {
+            return this.game.board;
+        }
+        else {
+            let entry: number = this.ui.logRender;
+            return this.game.log[entry].snapshot;
+        }
     }
 }

@@ -1,4 +1,4 @@
-import { Bombardment, Piece, Player, Board, Square, createBoard } from './game-objects';
+import { Game, Piece, Player, Board, Square } from './game-objects';
 import { ROWS, COLUMNS } from './game-config';
 
 export type Vector = {row: number, column: number};
@@ -62,8 +62,8 @@ export function move(piece: Piece, board: Board, maxMoves: number): Square[] {
                     // once we know it's on grid, make sure it's not bombarded
                     if (target.bombardment !== 'both' &&
                         target.bombardment !== invertPlayer(piece.player) &&
-                        // and it is not the case that both the piece is engaged and the target is in zone of control
-                        !(piece.engaged && checkZoneControl(target, invertPlayer(piece.player), board))) {
+                        // and it is not the case that the piece is adjacent to enemy and the  target is in a zone of control
+                        !(checkAdjacency(piece, board) && checkZoneControl(target, invertPlayer(piece.player), board))) {
                         // hurray we can move here
                         potentialMoves.push(target);
                         // if we can move here, let's check the next square over
@@ -197,6 +197,22 @@ export function checkZoneControl(square: Square, player: Player, board: Board): 
         }
     }
     // if we made it here we found no matches
+    return false;
+}
+
+// tells us if an infantry piece is adjacent to an enemy infantry, does not consider engagement status
+export function checkAdjacency(piece: Piece, board: Board): boolean {
+
+    const source: Square = board[piece.row][piece.column];
+    let vectors: Vector[] = [{row: 0, column: 1}, {row: 1, column: 0}, {row: 0, column: -1}, {row: -1, column: 0}];
+    for (let vector of vectors) {
+        if (isOnGrid(source.row + vector.row, source.column + vector.column)) {
+            const target: Square = board[source.row + vector.row][source.column + vector.column];
+            if (target.piece?.type === 'infantry' && target.piece?.player === invertPlayer(piece.player)) {
+                return true;
+            }
+        }
+    }
     return false;
 }
 

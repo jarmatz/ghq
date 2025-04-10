@@ -7,6 +7,7 @@
   --piece-blue: #6dbeee;
   --piece-red: #d95034;
   --bombardment-size: 6px;
+  --border-color: rgb(79, 72, 117);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -63,11 +64,15 @@ a {
 .tray {
   display: grid;
   grid-template-rows: var(--cell-size);
-  grid-template-columns: repeat(6, var(--cell-size));
+  grid-template-columns: repeat(7, var(--cell-size));
+  outline-width: 0px;
+  outline-offset: -1px;
+  outline-color: var(--border-color);
+  outline-style: solid;
 }
 
 .cell {
-  border: 1px solid #4f4875;
+  border: 1px solid var(--border-color);
   background-color: var(--board-color);
   display: flex;
   align-items: center;
@@ -88,6 +93,8 @@ a {
   background-color: rgba(255, 255, 255, 0.5);
   border-radius: 50%;
 }
+
+
 
 .activeSquare {
 
@@ -130,6 +137,10 @@ a {
   animation: pulse 1.25s ease-in-out infinite;
 }
 
+.bloom {
+  animation: bloom 5s infinite ease;
+}
+
 @keyframes pulse {
   0% {
     transform: scale(1);
@@ -141,6 +152,27 @@ a {
   100% {
     transform: scale(1);
     opacity: 1;
+  }
+}
+
+@keyframes bloom {
+  0%{
+    outline-width: 1px;
+    outline-offset: 0;
+    outline-color: rgb(79, 72, 117, 0);
+  }
+  5% {
+    outline-color: rgb(79, 72, 117, .75);
+  }
+  40% {
+    outline-width: 6px;
+    outline-offset: 8px;
+    outline-color: rgba(255, 255, 255, 0)
+  }
+  100% {
+    outline-width: 6px;
+    outline-offset: 8px;
+    outline-color: rgb(79, 72, 117, 0)
   }
 }
 

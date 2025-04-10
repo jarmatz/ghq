@@ -126,11 +126,20 @@ function Rotators({ session, dispatch, square }: CellProps) {
 
 // this renders the tray
 function Tray({player, session, dispatch} : TrayProps) {
+    let bloom: string = '';
+    let actions: number = 0;
+    if (player === session.game.activePlayer) {
+        bloom = 'bloom';
+        actions = session.game.actionsLeft;
+    }
+
     return (
-        <div className="tray">
+        <div className={`tray ${bloom}`}>
             {session.game.trays[player].map((reserve, index) => (
                 <TrayCell reserve={reserve} session={session} dispatch={dispatch} key={index}/>
             ))}
+            {/*This renders the pass button and active ticks remaining: */}
+            <div className="cell">Actions: {actions}</div>
         </div>
     )
 }

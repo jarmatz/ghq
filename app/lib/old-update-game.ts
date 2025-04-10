@@ -3,7 +3,7 @@ import { instanceToPlain, plainToInstance } from 'class-transformer';
 // my imports:
 import { Game, GameAction, Board, Piece, Player, Square } from './game-objects';
 import { checkMoves, checkPlacements } from './game-helpers';
-import { upkeep } from './ui-helpers';
+import { upkeep } from './handler-reducer';
 import gameCache from './game-cache';
 import { getGame, updateDatabase } from './server-helpers';
 

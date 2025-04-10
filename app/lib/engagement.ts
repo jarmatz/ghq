@@ -16,6 +16,8 @@ class PotentialEngagement {
     }
 }
 
+// a cleanup function (possibly left unused) to reset rotations
+// currently redundant with wipe engagements, which is called when we set engagements
 export function setDefaultRotations(board: Board): Board {
     const unengagedInfantry: Square[] = scanBoard(square => square.piece?.type === 'infantry' && !square.piece.engaged, board);
     for (const square of unengagedInfantry) {
