@@ -1,6 +1,6 @@
 import pg from "pg";
 import dotenv from 'dotenv';
-dotenv.config({path: '.env.local'});
+dotenv.config();
 
 declare global {
     var dbPool: pg.Pool | undefined;

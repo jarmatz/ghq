@@ -19,10 +19,10 @@ import dotenv2 from "dotenv";
 // ../app/lib/server-helpers.ts
 import { plainToInstance, instanceToPlain } from "class-transformer";
 
-// ../app/lib/pgpool.ts
+// src/pgpool.ts
 import pg from "pg";
 import dotenv from "dotenv";
-dotenv.config({ path: ".env.local" });
+dotenv.config();
 var pool = global.dbPool || new pg.Pool({
   connectionString: process.env.DB_URL,
   ssl: {
@@ -1157,7 +1157,7 @@ function validate(action, game) {
 }
 
 // src/server.ts
-dotenv2.config({ path: ".env.local" });
+dotenv2.config();
 var expressApp = express();
 var httpServer = http.createServer(expressApp);
 var corsOrigin;

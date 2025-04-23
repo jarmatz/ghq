@@ -5,7 +5,7 @@ import http from 'http';
 import { Server } from 'socket.io';
 // nextjs does env variables for us vanilla, but we need a package here in node:
 import dotenv from 'dotenv';
-dotenv.config({path: '.env.local'});
+dotenv.config();
 // my imports:
 import { loadGameResponse } from '@/app/lib/server-helpers';
 import { updateGame } from '@/app/lib/update-game';
