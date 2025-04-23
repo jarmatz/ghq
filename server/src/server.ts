@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 // the server that handles web sockets and processes incoming moves
 import express from 'express';
 import http from 'http';
@@ -6,8 +7,8 @@ import { Server } from 'socket.io';
 import dotenv from 'dotenv';
 dotenv.config({path: '.env.local'});
 // my imports:
-import { loadGameResponse } from './app/lib/server-helpers';
-import { updateGame } from './app/lib/update-game';
+import { loadGameResponse } from '@/app/lib/server-helpers';
+import { updateGame } from '@/app/lib/update-game';
 
 // we need to use express to quickly set up an HTTP server to plug socket.io into
 // this is just the vernacular for doing so

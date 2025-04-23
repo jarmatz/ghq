@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"next dev --turbopack\" \"npx tsx server.ts\"",
+    "dev": "concurrently \"next dev --turbopack\" \"npx tsx server/src/server.ts\"",
     "dev-server": "npx tsx server.ts",
     "build": "next build",
     "start": "next start",
@@ -33,6 +33,7 @@
     "@types/react-dom": "^19",
     "concurrently": "^9.1.2",
     "ts-node": "^10.9.2",
+    "tsup": "^8.4.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   }

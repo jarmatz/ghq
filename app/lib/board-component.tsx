@@ -14,9 +14,6 @@ import { Render } from './ui-helpers'
 export default function GameBoard({ session, dispatch }: GameBoardProp) {
 
     console.log(session);
-    if (session.game.log.length > 0) {
-        console.log(session.game.log[session.game.log.length - 1].text);
-    }
 
     const playerRotation = session.ui.self === 'red' ? 180 : 0;
 

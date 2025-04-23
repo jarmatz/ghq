@@ -9,9 +9,10 @@ import { Game } from './game-objects';
 // if it's not there, it checks the db
 // if it gets it in db, it retrieves it and loads into cache
 // else it returns undefined
-export async function getGame(name: string): Promise<Game | undefined> {
+export async function getGame(name: string, forceDatabaseQuery: boolean = false): Promise<Game | undefined> {
     // if it's in the cache we're golden
-    if (gameCache.has(name)) {
+    // but we only check if we're not forcing a database query
+    if (gameCache.has(name) && forceDatabaseQuery === false) {
         // debug:
         console.log(`retrieved ${name} from cache and cache is ${gameCache.validate()}`)
         return gameCache.get(name);
@@ -44,7 +45,8 @@ export async function getGame(name: string): Promise<Game | undefined> {
 // otherwise it returns an error
 export async function loadGameResponse(socket: Socket, data: {name: string}) {
 
-    const game = await getGame(data.name);
+    // on the initial load we force a database query
+    const game = await getGame(data.name, true);
 
     if (!game) {
         socket.emit('loadGameResponse', {status: `Failed to find game: ${data.name}.`, game: game});

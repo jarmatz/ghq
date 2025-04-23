@@ -33,21 +33,21 @@ body {
 
 a {
   color: inherit;
-  text-decoration: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+  text-decoration: underline;
 }
 
 /* These are MINE:*/
 
-.slaughterhouse {
+.boardLogWrapper {
   display: flex;
   justify-content: center;
   transform: translatex(5%);
+}
+
+.bottomWrapper {
+  display: flex;
+  justify-content: center;
+  line-height: 2;
 }
 
 .logComponent {
@@ -59,6 +59,10 @@ a {
   outline: solid 1px var(--border-color);
   overflow-y:auto;
   overflow-x:hidden;
+}
+
+.logPlaceholder {
+  margin: 4px;
 }
 
 .logEntry {

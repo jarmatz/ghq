@@ -12,6 +12,7 @@ export default function Home() {
     const [status, setStatus] = useState('');
     const [action, setAction] = useState('create');
     const [player, setPlayer] = useState('blue');
+    const [hqVictory, setHqVictory] = useState(false);
     const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -24,12 +25,17 @@ export default function Home() {
             setStatus('Only alphanumeric characters allowed.');
             return;
         }
+
+        if (name.length > 100) {
+            setStatus('Names must be fewer than 100 characters in length.');
+            return;
+        }
         
         // creating a new game
         if ( action === 'create') {
             try {
                 setStatus('Fetching new game.');
-                const response: GameResponse = await createNewGame(name);
+                const response: GameResponse = await createNewGame(name, hqVictory);
                 console.log(response);
 
                 if (response.success) {
@@ -87,8 +93,19 @@ export default function Home() {
                         <input type='radio' name='player' id='red' value='red' checked={player === 'red'}
                             onChange={(e) => setPlayer(e.target.value)}></input>
                         <label htmlFor='red'>Red</label>
+                        <input type='radio' name='player' id='obs' value='obs' checked={player === 'obs'}
+                            onChange={(e) => setPlayer(e.target.value)}></input>
+                        <label htmlFor='obs'>Observer</label>
                     </div>
                 )}
+                { action === 'create' &&
+                    <div>
+                        <input type='checkbox' checked={hqVictory} id='hqVictoryBox' name='hqVictoryBox' value='true'
+                            onChange={(e) => setHqVictory(e.target.checked)}>
+                        </input>
+                        <label htmlFor='hqVictoryBox'>Optional rule: bringing HQ to enemy's backrank also results in victory</label>
+                    </div>
+                }
             </form>
             <br></br>
             <p>{status}</p>
@@ -97,12 +114,15 @@ export default function Home() {
 
 }
 
-export async function createNewGame(name: string): Promise<GameResponse> {
+async function createNewGame(name: string, hqVictoryOption: boolean): Promise<GameResponse> {
 
     const response = await fetch('/api/create-game', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ name })
+        body: JSON.stringify({ 
+            name: name,
+            hqVictoryOption: hqVictoryOption
+        })
     });
 
     // we convert the response to a json object
@@ -110,7 +130,7 @@ export async function createNewGame(name: string): Promise<GameResponse> {
     return result;
 }
 
-export async function loadGame(name: string): Promise<GameResponse> {
+async function loadGame(name: string): Promise<GameResponse> {
 
     const response = await fetch('/api/load-game', {
         method: 'POST',

@@ -46,10 +46,8 @@ export function checkActiveCaptures(source: Square, board: Board): string[] {
                             if (metaTarget.piece && metaTarget.piece.player === source.piece.player 
                                 && metaTarget.piece.type === 'infantry' && !metaTarget.piece.engaged) {
                                     oppositionCount++;
-                                    console.log(metaTarget.getID());
                                 }
                             if (oppositionCount >= 2) {
-                                console.log('opp count check')
                                 potentialCaptures.push(target);
                                 break;
                             }

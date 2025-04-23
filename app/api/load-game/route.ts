@@ -16,6 +16,9 @@ export async function POST (req: Request) {
         if (isAlphaNum(name) === false){
             return NextResponse.json({ sucess: false, error: 'Names must contain only letters and numbers.' }, { status: 400 });
         }
+        if (name.length > 100){
+            return NextResponse.json({ sucess: false, error: 'Names must be fewer than 100 characters.' }, { status: 400 });
+        }
 
         const result = await query('SELECT name FROM games WHERE name = $1', [name]);
 

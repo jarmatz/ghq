@@ -10,6 +10,7 @@ import { enableMapSet } from 'immer';
 // my imports
 import GameBoard from '@/app/lib/board-component';
 import LogComponent from '@/app/lib/log-component';
+import BottomComponent from '@/app/lib/bottom-component';
 import { Session, Game, Player } from '@/app/lib/game-objects';
 import { getSocket } from '@/app/lib/socket';
 import { sessionReducer } from '@/app/lib/handler-reducer';
@@ -71,12 +72,17 @@ export default function Page() {
     // ###################################################
     return (
         <div className="slaughterhouse">
-            <div className="gameBoard">
-                {session ? <GameBoard session={session} dispatch={dispatch}/> : <p>{status}</p>}
+            <div className="boardLogWrapper">
+                <div className="gameBoard">
+                    {session ? <GameBoard session={session} dispatch={dispatch}/> : <p>{status}</p>}
+                </div>
+                {session && <div className="logComponent">
+                    <LogComponent session={session} dispatch={dispatch}/>
+                </div>}
             </div>
-            <div className="logComponent">
-                {session && <LogComponent session={session} dispatch={dispatch}/>}
-            </div>
+            {session && <div>
+                <BottomComponent name={session.game.name}/>
+            </div>}
         </div>
     );
 }
