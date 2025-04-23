@@ -1,6 +1,7 @@
 import { Dispatch } from 'react'
 // my imports:
 import { Session } from './game-objects'
+import { handleLog } from './handler-reducer';
 
 export default function LogComponent({ session, dispatch }: LogProp) {
 
@@ -9,7 +10,9 @@ export default function LogComponent({ session, dispatch }: LogProp) {
             <div className ="log">
                 {session.game.log.map((entry, i) => 
                     <div className='logEntry'
-                    key={i}>
+                        onMouseEnter={(event) => handleLog(event, dispatch, session, i)}
+                        onMouseLeave={(event) => handleLog(event, dispatch, session, i)}
+                        key={i}>
                         <p>{session.game.log.length - i}. {entry.text}</p>
                     </div>
                 )}

@@ -1,12 +1,17 @@
 import { instanceToPlain, plainToInstance } from 'class-transformer';
 // my imports:
 import { Game, Board, Player, GameAction, Log } from '@/app/lib/game-objects';
+import { setBombardments } from './game-helpers';
+import { setEngagements } from './engagement';
 
 // takes as input game instance (which is easier syntax for class transformer)
 // and returns us a clone of its board state
 // useful for adding to the game log
 export function snapshotBoard(game: Game): Board {
     const proxyGame: Game = plainToInstance(Game, instanceToPlain(game));
+    // we have to set engagements/bombardments here
+    proxyGame.board = setEngagements(proxyGame.board);
+    proxyGame.board = setBombardments(proxyGame.board);
     return proxyGame.board;
 }
 

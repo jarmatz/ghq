@@ -5,13 +5,18 @@ import Image from 'next/image';
 import { Dispatch, useEffect } from 'react';
 // my imports:
 import { Game, Player, Reserve, Square, Session } from '@/app/lib/game-objects';
-import { handleBoardClick, handleTrayClick, handleRotator, handleCapture} from '@/app/lib/ui-helpers';
+import { handleBoardClick, handleTrayClick, handleRotator, handleCapture, handleEndTurn} from '@/app/lib/handler-reducer';
+import { invertPlayer } from '../lib/game-helpers';
+import { Render } from '../lib/ui-helpers'
 
 
 // the main page
 export default function GameBoard({ session, dispatch }: GameBoardProp) {
 
     console.log(session);
+    if (session.game.log.length > 0) {
+        console.log(session.game.log[session.game.log.length - 1].text);
+    }
 
     const playerRotation = session.ui.self === 'red' ? 180 : 0;
 
@@ -35,9 +40,16 @@ export default function GameBoard({ session, dispatch }: GameBoardProp) {
 // this renders the board itself
 function Board({ session, dispatch }: BoardProps) {
     
+    const playerRotation = session.ui.self === 'red' ? 180 : 0;
+
     return (
         <div className="board">
-            {session.game.board.map((row) => (
+            {session.game.winner !== '' &&
+                <div className="victoryText" style={{transform: `translate(-50%, -50%) rotate(${playerRotation}deg)`}}>
+                    {`${session.game.winner.toUpperCase()} WINS`}
+                </div>
+            }
+            {session.getBoardForRender().map((row) => (
                 row.map((square) => (
                     <Cell square={square} session={session} dispatch={dispatch} key={square.getID()}/>
                 ))
@@ -50,42 +62,36 @@ function Board({ session, dispatch }: BoardProps) {
 // we pass in the square object that is represented in the cell
 function Cell({square, session, dispatch} : CellProps) {
     
-    // we're going to highlight cells based on the UI state
-    // this option is for rendering centered circles inside the square
-    let circleEffect: string = '';
-    if (session.ui.potentialMoves.includes(square.getID())) {
-        circleEffect += 'circle ';
-    }
-    if (square.piece?.getID() === session.ui.activePiece?.getID() && square.piece && square.piece?.type === 'artillery') {
-        circleEffect += 'rotatorEffect pulse ';
-    }
-    // this option is for affecting the background of the square
-    let backgroundEffect: string = '';
-    if (square.piece?.getID() === session.ui.activePiece?.getID() && square.piece) {
-        backgroundEffect += 'activeSquare ';
-    }
-    if (square.bombardment !== '') {
-        backgroundEffect = 'bombardment';
-        backgroundEffect += (square.bombardment + ' ');
-    }
+    const render: Render = new Render(square, session);
+    const playerRotation = session.ui.self === 'red' ? 180 : 0;
 
     // this renders the image in the cell if a piece is there
     return (
     <div
-        className={`cell ${backgroundEffect}`}
+        className={`cell ${render.getBackgroundEffect()}`}
         onClick ={(event) => handleBoardClick(event, dispatch, session, square)}
+
     >   {/*renders the piece image:*/}
         {square.piece && <Image src={`/pieces/${square.piece.name}.webp`}
                         alt={square.piece.name}
                         title={square.piece.name}
                         width={200} height={200}
                         style={{transform: `rotate(${square.piece.rotation}deg)`}} />}
-        <div className={circleEffect}></div>
+
+        {/*renders the lock for depleted pieces */}
+        {render.getLockBool() && <Image src={'/lock.webp'}
+                                    alt='lock'
+                                    width='40' height='40'
+                                    style={{opacity: .6, transform: `scale(.3) rotate(${playerRotation}deg)`}}/>}
+
+        <div className={render.getCircleEffect()}></div>
+
         {/*renders invisible rotators if artillery is active:*/}
         {square.piece?.getID() === session.ui.activePiece?.getID() && square.piece && square.piece?.type === 'artillery' &&
             <Rotators square={square} session={session} dispatch={dispatch}/>}
-        {/*renders crosshairs for active infantry captures: */}
-        {session.ui.potentialCaptures.includes(square.getID()) &&        
+
+        {/*renders crosshairs for captures: */}
+        {render.getCrosshairsBool() &&        
             <Image src={`/crosshairs.webp`} 
                         alt = 'crosshairs'
                         width='200' height='200'
@@ -139,7 +145,15 @@ function Tray({player, session, dispatch} : TrayProps) {
                 <TrayCell reserve={reserve} session={session} dispatch={dispatch} key={index}/>
             ))}
             {/*This renders the pass button and active ticks remaining: */}
-            <div className="cell">Actions: {actions}</div>
+            <div className="cell actions">
+                Actions: {actions}
+                <button className="endturn"
+                        onClick={(event) => handleEndTurn(event, dispatch, session)}
+                        onMouseLeave={(event) => handleEndTurn(event, dispatch, session)}
+                        onMouseEnter={(event) => handleEndTurn(event, dispatch, session)}>
+                    END TURN
+                </button>
+            </div>
         </div>
     )
 }

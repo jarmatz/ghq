@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { isAlphaNum } from '@/app/lib/ui-helpers';
+import { isAlphaNum } from '../lib/ui-helpers';
 
 export default function Home() {
    

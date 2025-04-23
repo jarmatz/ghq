@@ -4,17 +4,11 @@
   
   --cell-size: 80px;
   --board-color: #ffb74b;
+  --active-color: oklch(from var(--board-color) calc(l * 1.20) c h);
   --piece-blue: #6dbeee;
   --piece-red: #d95034;
   --bombardment-size: 6px;
   --border-color: rgb(79, 72, 117);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #283688;
-    --foreground: #000000;
-  }
 }
 
 html,
@@ -50,6 +44,35 @@ a {
 
 /* These are MINE:*/
 
+.slaughterhouse {
+  display: flex;
+  justify-content: center;
+  transform: translatex(5%);
+}
+
+.logComponent {
+  background-color: var(--board-color);
+  height: 640px;
+  width: 300px;
+  margin-left: 40px;
+  margin-top: 117px;
+  outline: solid 1px var(--border-color);
+  overflow-y:auto;
+  overflow-x:hidden;
+}
+
+.logEntry {
+  padding-top: 5px;
+  padding-bottom: 5px;
+  padding-left: 4px;
+  border: solid 1px var(--border-color);
+  margin: -1px;
+}
+
+.logEntry:hover{
+  background-color: oklch(from var(--board-color) calc(l * 1.20) c h)
+}
+
 .board-wrapper {
   justify-items: center;
 }
@@ -57,6 +80,7 @@ a {
 .board {
   
   display: grid;
+  position:relative;
   grid-template-rows: repeat(8, var(--cell-size));
   grid-template-columns: repeat(8, var(--cell-size));
 }
@@ -72,7 +96,7 @@ a {
 }
 
 .cell {
-  border: 1px solid var(--border-color);
+  outline: solid 1px var(--border-color);
   background-color: var(--board-color);
   display: flex;
   align-items: center;
@@ -87,6 +111,24 @@ a {
   position:absolute;
 }
 
+.actions {
+  display: flex;
+  flex-direction:column;
+}
+
+.endturn {
+  position:relative;
+  top: 10px;
+  padding: 2px 4px;
+  background-color: var(--border-color);
+  border: none;
+  color: white;
+}
+
+.endturn:hover {
+  background-color: oklch(from var(--border-color) calc(l * 1.20) c h);
+}
+
 .circle {
   width: 25%;
   height: 25%;
@@ -94,11 +136,8 @@ a {
   border-radius: 50%;
 }
 
-
-
 .activeSquare {
-
-  background-color: oklch(from var(--board-color) calc(l * 1.20) c h)
+  background-color: var(--active-color);
 }
 
 .countText {
@@ -133,12 +172,25 @@ a {
   position: absolute;
 }
 
+.victoryText {
+  position:absolute;
+  z-index: 10;
+  transform-origin: center;
+  top: calc(var(--cell-size) * 4);
+  left: calc(var(--cell-size) * 4);
+  transform:translate(-50%, -50%);
+  font-size: 50px;
+  color: white;
+  text-shadow: 1px 1px 1px black;
+  opacity: .5;
+}
+
 .pulse {
   animation: pulse 1.25s ease-in-out infinite;
 }
 
 .bloom {
-  animation: bloom 5s infinite ease;
+  animation: bloom 4s infinite ease;
 }
 
 @keyframes pulse {
@@ -194,6 +246,23 @@ a {
      0 0/var(--s) var(--s);
 }
 
+.bombardmentredlight {
+  --s: var(--bombardment-size);
+  --c1: var(--active-color);
+  --c2: var(--active-color);
+  --c3: var(--piece-red);
+  
+  --_s: calc(2*var(--s)) calc(2*var(--s));
+  --_g1: var(--_s) conic-gradient(at calc(500%/6) 50%,var(--c3) 25%,#0000 0);
+  --_g2: var(--_s) conic-gradient(at calc(200%/3) 50%,var(--c2) 25%,#0000 0);
+  background:
+    var(--s) var(--s)/var(--_g1),0 0/var(--_g1),
+    var(--s) var(--s)/var(--_g2),0 0/var(--_g2),
+    repeating-conic-gradient(var(--c1) 0 25%,#0000 0 50%) 0 0/var(--_s),
+    linear-gradient(var(--c1) calc(100%/3),var(--c2) 0 calc(200%/3),var(--c3) 0)
+     0 0/var(--s) var(--s);
+}
+
 .bombardmentblue {
   --s: var(--bombardment-size);
   --c1: var(--board-color);
@@ -211,9 +280,43 @@ a {
      0 0/var(--s) var(--s);
 }
 
+.bombardmentbluelight {
+  --s: var(--bombardment-size);
+  --c1: var(--active-color);
+  --c2: var(--active-color);
+  --c3: var(--piece-blue);
+  
+  --_s: calc(2*var(--s)) calc(2*var(--s));
+  --_g1: var(--_s) conic-gradient(at calc(500%/6) 50%,var(--c3) 25%,#0000 0);
+  --_g2: var(--_s) conic-gradient(at calc(200%/3) 50%,var(--c2) 25%,#0000 0);
+  background:
+    var(--s) var(--s)/var(--_g1),0 0/var(--_g1),
+    var(--s) var(--s)/var(--_g2),0 0/var(--_g2),
+    repeating-conic-gradient(var(--c1) 0 25%,#0000 0 50%) 0 0/var(--_s),
+    linear-gradient(var(--c1) calc(100%/3),var(--c2) 0 calc(200%/3),var(--c3) 0)
+     0 0/var(--s) var(--s);
+}
+
 .bombardmentboth {
   --s: var(--bombardment-size);
   --c1: var(--board-color);
+  --c2: var(--piece-red);
+  --c3: var(--piece-blue);
+  
+  --_s: calc(2*var(--s)) calc(2*var(--s));
+  --_g1: var(--_s) conic-gradient(at calc(500%/6) 50%,var(--c3) 25%,#0000 0);
+  --_g2: var(--_s) conic-gradient(at calc(200%/3) 50%,var(--c2) 25%,#0000 0);
+  background:
+    var(--s) var(--s)/var(--_g1),0 0/var(--_g1),
+    var(--s) var(--s)/var(--_g2),0 0/var(--_g2),
+    repeating-conic-gradient(var(--c1) 0 25%,#0000 0 50%) 0 0/var(--_s),
+    linear-gradient(var(--c1) calc(100%/3),var(--c2) 0 calc(200%/3),var(--c3) 0)
+     0 0/var(--s) var(--s);
+}
+
+.bombardmentbothlight {
+  --s: var(--bombardment-size);
+  --c1: var(--active-color);
   --c2: var(--piece-red);
   --c3: var(--piece-blue);
   

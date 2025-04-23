@@ -202,6 +202,20 @@ export function handleEndTurn(event: React.MouseEvent, dispatch: Dispatch<any>, 
     }
 }
 
+export function handleLog(event: React.MouseEvent, dispatch: Dispatch<any>, session: Session, entry: number): void {
+    if (event.type === 'mouseenter') {
+        dispatch({
+            type: 'showLog',
+            entry: entry
+        })
+    }
+    else if (event.type === 'mouseleave') {
+        dispatch({
+            type: 'hideLog',
+        })
+    }
+}
+
 // this executes the updates to session (both UI and local game data) based on the kind of click/input/data push
 // this is the ONLY function that can update the game state/ui (session object)
 // note the 'session' passed as an argument to the function is really a draft, a la immer vernacular
@@ -266,11 +280,8 @@ export function sessionReducer (session: WritableDraft<Session | null>, action: 
             break;
         }
         case 'deactivate': {
-            // is there a combo? then this is the user saying they want to keep rotation where it is on a pending action
-            if (!session.ui.activePiece) {
-                break;
-            }
-            if (session.ui.preAction !== null) {
+            // if we have an active piece and a preaction, this means that the user is saying "keep the current rotation on a combo"
+            if (session.ui.activePiece && session.ui.preAction !== null) {
                 session.ui.gameAction = session.ui.preAction.addRotation(session.ui.rotationMemory);
                 session.ui.activePiece.depleted = true;
                 session.game.actionsLeft = action.actions - 1;
@@ -485,12 +496,15 @@ export function sessionReducer (session: WritableDraft<Session | null>, action: 
             session.ui.gameAction = new GameAction('endTurn', new Piece(`${player}-dummy-dummy`), null, null, null);
             break;
         }
+        case 'showLog': {
+            session.ui.logRender = action.entry;
+            break;
+        }
+        case 'hideLog': {
+            session.ui.logRender = null;
+            break;
+        }
     }
     // code down here activates for every case, except the initial load
-    // this makes sure our UI board reference is always correct
-    if (session.ui.logRender === false) {
-        session.ui.board = session.game.board;
-    }
-
     session.game = upkeep(session.game);
 }

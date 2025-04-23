@@ -9,9 +9,10 @@ import { useImmerReducer } from 'use-immer';
 import { enableMapSet } from 'immer';
 // my imports
 import GameBoard from '@/app/board/page';
+import LogComponent from '@/app/lib/log-component';
 import { Session, Game, Player } from '@/app/lib/game-objects';
 import { getSocket } from '@/app/lib/socket';
-import { sessionReducer } from '@/app/lib/ui-helpers';
+import { sessionReducer } from '@/app/lib/handler-reducer';
 
 enableMapSet();
 
@@ -69,8 +70,13 @@ export default function Page() {
     // our components for the page:
     // ###################################################
     return (
-        <div>
-            {session ? <GameBoard session={session} dispatch={dispatch}/> : <p>{status}</p>}
+        <div className="slaughterhouse">
+            <div className="gameBoard">
+                {session ? <GameBoard session={session} dispatch={dispatch}/> : <p>{status}</p>}
+            </div>
+            <div className="logComponent">
+                {session && <LogComponent session={session} dispatch={dispatch}/>}
+            </div>
         </div>
     );
 }
