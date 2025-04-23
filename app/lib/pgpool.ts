@@ -1,4 +1,6 @@
 import pg from "pg";
+import dotenv from 'dotenv';
+dotenv.config({path: '.env.local'});
 
 declare global {
     var dbPool: pg.Pool | undefined;
@@ -9,11 +11,10 @@ declare global {
 // else we make a new one
 // prevents creating it over and over again in hot reloading dev environment
 const pool = global.dbPool || new pg.Pool({
-    user: process.env.PGUSER,
-    host: process.env.PGHOST,
-    database: process.env.PGDATABASE,
-    password: process.env.PGPASSWORD,
-    port: parseInt(process.env.PGPORT || '5432', 10),
+    connectionString: process.env.DB_URL,
+    ssl: {
+        rejectUnauthorized: false, // just temp for now, we can change with a cert later
+      },
   });
 
 // this is the final piece of the pattern

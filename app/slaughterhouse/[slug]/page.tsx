@@ -8,7 +8,7 @@ import { Socket } from 'socket.io-client';
 import { useImmerReducer } from 'use-immer';
 import { enableMapSet } from 'immer';
 // my imports
-import GameBoard from '@/app/board/page';
+import GameBoard from '@/app/lib/board-component';
 import LogComponent from '@/app/lib/log-component';
 import { Session, Game, Player } from '@/app/lib/game-objects';
 import { getSocket } from '@/app/lib/socket';

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import pool from '@/app/lib/db';
 import { instanceToPlain } from 'class-transformer';
 // my imports:
+import query from '@/app/lib/pgclient';
 import { Game } from '@/app/lib/game-objects';
 import { isAlphaNum } from '@/app/lib/ui-helpers';
 
@@ -21,7 +21,7 @@ export async function POST (req: Request) {
         
         const newGame: Game = new Game(name);
         // this is the SQL query to insert, it will return error if name is a duplicate (table settings)
-        await pool.query('INSERT INTO games (name, data) VALUES ($1, $2)', [name, instanceToPlain(newGame)]);
+        await query('INSERT INTO games (name, data) VALUES ($1, $2)', [name, instanceToPlain(newGame)]);
         // we did it!
         return NextResponse.json({success: true, name: name}, { status: 201});   
     }

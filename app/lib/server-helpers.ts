@@ -1,7 +1,7 @@
 import { plainToInstance, instanceToPlain } from 'class-transformer';
 import { Socket } from 'socket.io'
 // my imports:
-import pool from './db';
+import pool from './pgpool';
 import gameCache from './game-cache';
 import { Game } from './game-objects';
 

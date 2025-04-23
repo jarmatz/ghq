@@ -1,7 +1,7 @@
 // FETCH LOBBY ROUTE
 
 import { NextResponse } from 'next/server';
-import pool from '@/app/lib/db';
+import query from '@/app/lib/pgclient';
 import { isAlphaNum } from '@/app/lib/ui-helpers';
 
 export async function POST (req: Request) {
@@ -17,7 +17,7 @@ export async function POST (req: Request) {
             return NextResponse.json({ sucess: false, error: 'Names must contain only letters and numbers.' }, { status: 400 });
         }
 
-        const result = await pool.query('SELECT name FROM games WHERE name = $1', [name]);
+        const result = await query('SELECT name FROM games WHERE name = $1', [name]);
 
         if (result.rowCount && result.rowCount > 0) {
             return NextResponse.json({ success: true, name: name }, { status: 200 });
