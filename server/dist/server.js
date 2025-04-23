@@ -1160,15 +1160,12 @@ function validate(action, game) {
 dotenv2.config();
 var expressApp = express();
 var httpServer = http.createServer(expressApp);
-var corsOrigin;
-if (process.env.NODE_ENV === "production") {
-  corsOrigin = "";
-} else {
-  corsOrigin = "http://localhost:3000";
-}
 var io = new Server(httpServer, {
   cors: {
-    origin: corsOrigin,
+    origin: [
+      "http://localhost:3000",
+      "https://ghq-ten.vercel.app"
+    ],
     methods: ["GET", "POST"]
   }
 });

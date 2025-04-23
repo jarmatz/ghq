@@ -15,17 +15,12 @@ import { updateGame } from '@/app/lib/update-game';
 const expressApp = express();
 const httpServer = http.createServer(expressApp);
 
-let corsOrigin: string;
-if (process.env.NODE_ENV === 'production') {
-    corsOrigin = '';
-}
-else {
-    corsOrigin = 'http://localhost:3000';
-}
-
 const io = new Server(httpServer, {
     cors: {
-        origin: corsOrigin,
+        origin: [
+            "http://localhost:3000",
+            "https://ghq-ten.vercel.app"
+          ],
         methods: ["GET", "POST"]
     }
 });
