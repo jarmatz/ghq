@@ -12,15 +12,12 @@
   },
   "dependencies": {
     "class-transformer": "^0.5.1",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
     "immer": "^10.1.1",
     "next": "15.2.0",
     "pg": "^8.14.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "reflect-metadata": "^0.2.2",
-    "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "use-immer": "^0.11.0"
   },
