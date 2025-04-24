@@ -8,9 +8,9 @@ import { Socket } from 'socket.io-client';
 import { useImmerReducer } from 'use-immer';
 import { enableMapSet } from 'immer';
 // my imports
-import GameBoard from '@/app/lib/board-component';
-import LogComponent from '@/app/lib/log-component';
-import BottomComponent from '@/app/lib/bottom-component';
+import GameBoard from '@/app/components/board-component';
+import LogComponent from '@/app/components/log-component';
+import BottomComponent from '@/app/components/bottom-component';
 import { Session, Game, Player } from '@/app/lib/game-objects';
 import { getSocket } from '@/app/lib/socket';
 import { sessionReducer } from '@/app/lib/handler-reducer';
@@ -27,7 +27,7 @@ export default function Page() {
     // our session reducer
     const [session, dispatch] = useImmerReducer<Session | null, any>(sessionReducer, null);
     // state for the loading status
-    const [status, setStatus] = useState('Not loaded.')
+    const [status, setStatus] = useState('Loading game...')
 
     // setting up socket listeners and loading the initial gamestate
     useEffect(() => {

@@ -6,8 +6,8 @@ import { Dispatch, useEffect } from 'react';
 // my imports:
 import { Game, Player, Reserve, Square, Session } from '@/app/lib/game-objects';
 import { handleBoardClick, handleTrayClick, handleRotator, handleCapture, handleEndTurn} from '@/app/lib/handler-reducer';
-import { invertPlayer } from './game-helpers';
-import { Render } from './ui-helpers'
+import { invertPlayer } from '../lib/game-helpers';
+import { Render } from '../lib/ui-helpers'
 
 
 // the main page

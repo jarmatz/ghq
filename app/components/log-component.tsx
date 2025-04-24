@@ -1,7 +1,7 @@
 import { Dispatch } from 'react'
 // my imports:
-import { Session } from './game-objects'
-import { handleLog } from './handler-reducer';
+import { Session } from '../lib/game-objects'
+import { handleLog } from '../lib/handler-reducer';
 
 export default function LogComponent({ session, dispatch }: LogProp) {
 
