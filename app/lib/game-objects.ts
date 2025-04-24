@@ -199,11 +199,11 @@ export class GameAction {
     public readonly rotation: number | null;
     @Type(() => Square)
     public readonly capture: Square | null;
+    public readonly endTurnFlag: boolean;
 
-    // we use a destructuring syntax so we can specify which parameters we pass in
-    // new GameAction({ type: 'move', piece: somePiece}) etc.
     constructor(type: string, piece: Piece | null, reserve: Reserve | null, source: Square | null, 
-                target: Square| null, rotation: number | null = null, capture: Square | null = null
+                target: Square| null, rotation: number | null = null, capture: Square | null = null,
+                endTurnFlag: boolean = false
     ) {
         this.type = type;
         this.piece = piece;
@@ -212,12 +212,16 @@ export class GameAction {
         this.target= target;
         this.rotation = rotation;
         this.capture = capture;
+        this.endTurnFlag = endTurnFlag;
     }
     addRotation(rotation: number) {
-        return new GameAction(this.type, this.piece, this.reserve, this.source, this.target, rotation, this.capture);
+        return new GameAction(this.type, this.piece, this.reserve, this.source, this.target, rotation, this.capture, this.endTurnFlag);
     }
     addCapture(capture: Square) {
-        return new GameAction(this.type, this.piece, this.reserve, this.source, this.target, this.rotation, capture);
+        return new GameAction(this.type, this.piece, this.reserve, this.source, this.target, this.rotation, capture, this.endTurnFlag);
+    }
+    addEndTurnFlag() {
+        return new GameAction(this.type, this.piece, this.reserve, this.source, this.target, this.rotation, this.capture, true);
     }
 }
 

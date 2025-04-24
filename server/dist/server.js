@@ -501,9 +501,7 @@ __decorateClass([
 var _a4;
 _a4 = immerable;
 var _GameAction = class _GameAction {
-  // we use a destructuring syntax so we can specify which parameters we pass in
-  // new GameAction({ type: 'move', piece: somePiece}) etc.
-  constructor(type, piece, reserve, source, target, rotation = null, capture = null) {
+  constructor(type, piece, reserve, source, target, rotation = null, capture = null, endTurnFlag = false) {
     this[_a4] = true;
     this.type = type;
     this.piece = piece;
@@ -512,12 +510,16 @@ var _GameAction = class _GameAction {
     this.target = target;
     this.rotation = rotation;
     this.capture = capture;
+    this.endTurnFlag = endTurnFlag;
   }
   addRotation(rotation) {
-    return new _GameAction(this.type, this.piece, this.reserve, this.source, this.target, rotation, this.capture);
+    return new _GameAction(this.type, this.piece, this.reserve, this.source, this.target, rotation, this.capture, this.endTurnFlag);
   }
   addCapture(capture) {
-    return new _GameAction(this.type, this.piece, this.reserve, this.source, this.target, this.rotation, capture);
+    return new _GameAction(this.type, this.piece, this.reserve, this.source, this.target, this.rotation, capture, this.endTurnFlag);
+  }
+  addEndTurnFlag() {
+    return new _GameAction(this.type, this.piece, this.reserve, this.source, this.target, this.rotation, this.capture, true);
   }
 };
 __decorateClass([
@@ -972,7 +974,7 @@ function logifyAction(action, snapshot) {
       activeIDs.push(action.source.getID());
       activeIDs.push(action.target.getID());
       if (action.capture !== null) {
-        text += ` and captured a ${action.capture.piece?.tag} ${action.capture.piece?.type}`;
+        text += ` and captured a ${action.capture.piece?.tag} ${action.capture.piece?.type}. So it goes`;
         captureIDs.push(action.capture.getID());
       }
       break;
@@ -981,7 +983,7 @@ function logifyAction(action, snapshot) {
       text += `${action.reserve?.player} placed a ${action.reserve?.tag} ${action.reserve?.type}`;
       activeIDs.push(action.target.getID());
       if (action.capture !== null) {
-        text += ` and captured a ${action.capture.piece?.tag} ${action.capture.piece?.type}`;
+        text += ` and captured a ${action.capture.piece?.tag} ${action.capture.piece?.type}. So it goes`;
         captureIDs.push(action.capture.getID());
       }
       break;
@@ -992,7 +994,7 @@ function logifyAction(action, snapshot) {
       break;
     }
     case "capture": {
-      text += `${action.piece?.player} captured a ${action.capture?.piece?.tag} ${action.capture?.piece?.type}`;
+      text += `${action.piece?.player} captured a ${action.capture?.piece?.tag} ${action.capture?.piece?.type}. So it goes`;
       activeIDs.push(action.source.getID());
       captureIDs.push(action.capture.getID());
       break;
@@ -1000,6 +1002,7 @@ function logifyAction(action, snapshot) {
   }
   text += ".";
   text = text[0].toUpperCase() + text.slice(1);
+  text = text.replaceAll(" a a", " an a");
   return new Log(text, snapshot, activeIDs, captureIDs);
 }
 
@@ -1133,9 +1136,11 @@ function validate(action, game) {
       break;
     }
     case "endTurn": {
-      game.actionsLeft = 1;
       break;
     }
+  }
+  if (action.endTurnFlag) {
+    game.actionsLeft = 1;
   }
   if (action.type !== "endTurn") {
     game.log.unshift(logifyAction(action, snapshot));

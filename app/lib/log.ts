@@ -28,7 +28,7 @@ export function logifyAction(action: GameAction, snapshot: Board): Log {
             activeIDs.push(action.target!.getID());
 
             if (action.capture !== null) {
-                text += ` and captured a ${action.capture.piece?.tag} ${action.capture.piece?.type}`;
+                text += ` and captured a ${action.capture.piece?.tag} ${action.capture.piece?.type}. So it goes`;
                 captureIDs.push(action.capture.getID());
             }
             break;
@@ -38,7 +38,7 @@ export function logifyAction(action: GameAction, snapshot: Board): Log {
             activeIDs.push(action.target!.getID());
 
             if (action.capture !== null) {
-                text += ` and captured a ${action.capture.piece?.tag} ${action.capture.piece?.type}`;
+                text += ` and captured a ${action.capture.piece?.tag} ${action.capture.piece?.type}. So it goes`;
                 captureIDs.push(action.capture.getID());
             }
             break;
@@ -49,7 +49,7 @@ export function logifyAction(action: GameAction, snapshot: Board): Log {
             break;
         }
         case 'capture': {
-            text += `${action.piece?.player} captured a ${action.capture?.piece?.tag} ${action.capture?.piece?.type}`;
+            text += `${action.piece?.player} captured a ${action.capture?.piece?.tag} ${action.capture?.piece?.type}. So it goes`;
             activeIDs.push(action.source!.getID());
             captureIDs.push(action.capture!.getID());
             break;

@@ -373,6 +373,7 @@ export function sessionReducer (session: WritableDraft<Session | null>, action: 
             if (target.piece.type === 'artillery') {
                 // this is now the active piece, since we will remain active!!!
                 session.ui.activePiece = target.piece;
+                session.ui.rotationMemory = target.piece.rotation;
                 // but we have no moves to make + we need to deactivate the tray
                 session.ui.activeReserve = null;
                 session.ui.potentialMoves = [];
@@ -489,11 +490,23 @@ export function sessionReducer (session: WritableDraft<Session | null>, action: 
             break;
         }
         case 'endTurn': {
+            // we need to dispatch any preactions first so they register
+            // if we're here it means we've either moved/placed a piece and then not capture, or then not rotated with our free action
+            // we can leave the capture hanging, but we need to get the current rotation to send to the server for a well-formed action
+            if (session.ui.preAction !== null && session.ui.activePiece) {
+                let rotation: number = session.ui.activePiece.rotation;
+                session.ui.preAction = session.ui.preAction.addRotation(rotation);
+                // now we can dispatch this
+                session.ui.gameAction = session.ui.preAction.addEndTurnFlag();
+            }
+            // otherwise there was no preaction, it's a clean "endTurn"
+            else {
+                // we make a dummy piece so we can send player information to the server in a well-formed manner
+                let player: string = session.ui.self;
+                session.ui.gameAction = new GameAction('endTurn', new Piece(`${player}-dummy-dummy`), null, null, null, null, null, true);
+            }    
             session.ui = deactivateUI(session.ui);
-            session.game.actionsLeft = 0;
-            // we make a dummy piece so we can send player information to the server in a well-formed manner
-            let player: string = session.ui.self;
-            session.ui.gameAction = new GameAction('endTurn', new Piece(`${player}-dummy-dummy`), null, null, null);
+            session.game.actionsLeft = 0;  
             break;
         }
         case 'showLog': {

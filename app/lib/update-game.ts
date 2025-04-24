@@ -183,11 +183,17 @@ export function validate(action: GameAction, game: Game): Game | null {
         case 'endTurn': {
             // we should already have player information from above
             // it's already been validated
-            // we always decrement actions outside of switch, so we set to 1 here instead of 0
-            game.actionsLeft = 1;
+            // this used to do the game.actionsLeft = 1 below, but we now handle it with the endTurnFlag to handle hanging premoves
+            // i'll leave this block here for future availability
+            // game.actionsLeft = 1;
             break;
         }
     }
+    // this sets us up to decrement to 0
+    if (action.endTurnFlag) {
+        game.actionsLeft = 1;
+    }
+    // still important to dispatch an "endTurn" case for this reason:
     if (action.type !== 'endTurn') {
         game.log.unshift(logifyAction(action, snapshot));
     }

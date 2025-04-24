@@ -1,6 +1,5 @@
 import { Square, Session, UI } from "./game-objects";
 import { invertPlayer } from "./game-helpers";
-import { act } from "react";
 
 export class Render {
 
