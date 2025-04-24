@@ -63,6 +63,7 @@ a {
 
 .logPlaceholder {
   margin: 4px;
+  line-height: 1.2;
 }
 
 .logEntry {
