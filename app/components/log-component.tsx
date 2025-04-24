@@ -22,7 +22,7 @@ export default function LogComponent({ session, dispatch }: LogProp) {
     else return(
         <div className='logPlaceholder'>
             <h3>Game Log:</h3>
-            <p>A record of all moves will appear here. Mouse over entries to see previous board states.</p>
+            <p>A record of all moves will appear here after being validated by the server. Mouse over entries to see previous board states.</p>
         </div>
     );
 }
