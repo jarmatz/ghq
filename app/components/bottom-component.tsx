@@ -1,4 +1,3 @@
-import { Source_Serif_4 } from "next/font/google";
 import React from "react";
 import { useState } from "react";
 
@@ -8,7 +7,7 @@ export default function BottomComponent({name}: BottomProp) {
         <div className="bottomWrapper">
             <div className='bottomContent'>
                 <div>
-                    <p>You can access this game by loading it via the <a href='/play'>splash page</a> or by using these links:</p>
+                    <p>You can access this game by loading it via the <a href='/play'>lobby page</a> or by using these links:</p>
                 </div>
                 <CopyComponent name={name} player='blue' />
                 <CopyComponent name={name} player='red' />

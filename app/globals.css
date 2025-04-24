@@ -36,7 +36,32 @@ a {
   text-decoration: underline;
 }
 
+a:hover {
+  filter:brightness(1.2);
+}
+
 /* These are MINE:*/
+
+.centered {
+  display: flex;
+  justify-content: center;
+}
+
+.footer {
+  display: flex;
+  justify-content: center;
+  font-size: .8em;
+  margin-top: 50px;
+  margin-bottom: 10px;
+  white-space: pre;
+}
+
+.content {
+  margin-top: 20px;
+  margin-left: 100px;
+  line-height: 1.2;
+  width: 600px;
+}
 
 .boardLogWrapper {
   display: flex;
@@ -196,6 +221,11 @@ a {
 
 .bloom {
   animation: bloom 4s infinite ease;
+}
+
+.gif {
+  margin: 10px;
+  filter: drop-shadow(6px 6px 4px #6e6e6e);
 }
 
 @keyframes pulse {

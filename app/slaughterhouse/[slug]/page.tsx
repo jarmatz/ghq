@@ -11,6 +11,7 @@ import { enableMapSet } from 'immer';
 import GameBoard from '@/app/components/board-component';
 import LogComponent from '@/app/components/log-component';
 import BottomComponent from '@/app/components/bottom-component';
+import Footer from '@/app/components/footer-component';
 import { Session, Game, Player } from '@/app/lib/game-objects';
 import { getSocket } from '@/app/lib/socket';
 import { sessionReducer } from '@/app/lib/handler-reducer';
@@ -83,6 +84,7 @@ export default function Page() {
             {session && <div>
                 <BottomComponent name={session.game.name}/>
             </div>}
+            <Footer />
         </div>
     );
 }

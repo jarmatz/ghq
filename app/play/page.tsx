@@ -5,8 +5,49 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { isAlphaNum } from '../lib/ui-helpers';
+import Footer from '../components/footer-component';
 
 export default function Home() {
+    return (
+        <div className='content'>
+            <Header />
+            <hr></hr>
+            <LobbyGenerator />
+            <Disclaimer />
+            <Footer />
+        </div>
+    )
+}
+
+function Header() {
+    return (
+        <div style={{lineHeight: 1.4}}>
+            <h1>
+                Getting Started:
+            </h1>
+            <p style={{marginTop: 10}}> 
+                Pick a unique name for your game lobby, or select "Load Game" to enter an existing lobby.
+            </p>
+            <p style={{marginTop: 10}}>
+                That's it.
+            </p>
+            <p style={{marginTop: 10}}>
+                No accounts. No sign-ups. No cookies. No user data. Just like Kurt would have wanted.*
+            </p>
+        </div>
+    )
+}
+
+function Disclaimer() {
+    return (
+        <p style={{fontSize: '.8em', marginTop:30}}>
+            *Note that anyone with your unique lobby name can enter your game. And anyone can play as either color.
+            We're on the honor system here, so be kind to each other and ask: WWKD? (What would Kurt do?)
+        </p>
+    )
+}
+
+function LobbyGenerator() {
    
     const [name, setName] = useState('');
     const [status, setStatus] = useState('');
@@ -73,9 +114,7 @@ export default function Home() {
     }
 
     return (
-        <div style={{margin: 10, lineHeight: 2}}>
-            <p>Pick a unique name for your game lobby and start playing.</p>
-            <p>No accounts, no cookies, no user data -- just like Kurt would have wanted.</p>
+        <div style={{lineHeight: 2}}>
             <form onSubmit={handleSubmit}>
                 <input value={name} type ='text' name='name' required placeholder='Lobby name'autoComplete='off'
                     onChange={(e) => setName(e.target.value)}>
@@ -105,7 +144,7 @@ export default function Home() {
                         <input type='checkbox' checked={hqVictory} id='hqVictoryBox' name='hqVictoryBox' value='true'
                             onChange={(e) => setHqVictory(e.target.checked)}>
                         </input>
-                        <label htmlFor='hqVictoryBox'>Optional rule: bringing HQ to enemy's backrank also results in victory</label>
+                        <label htmlFor='hqVictoryBox' style={{fontSize: '.8em'}}>Optional rule: bringing HQ to enemy's backrank also results in victory</label>
                     </div>
                 }
             </form>
