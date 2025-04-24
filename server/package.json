@@ -18,6 +18,7 @@
         "react-dom": "^19.0.0",
         "reflect-metadata": "^0.2.2",
         "socket.io": "^4.8.1",
-        "tsup": "^8.4.0"
+        "tsup": "^8.4.0",
+        "typescript": "^5.8.2"
     }
 }
