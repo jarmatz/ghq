@@ -19,7 +19,9 @@ const io = new Server(httpServer, {
     cors: {
         origin: [
             "http://localhost:3000",
-            "https://ghq-ten.vercel.app"
+            "https://ghq-ten.vercel.app",
+            "https://ghqboardgame.com",
+            "https://www.ghqboardgame.com"
           ],
         methods: ["GET", "POST"]
     }
