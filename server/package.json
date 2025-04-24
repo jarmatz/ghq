@@ -9,6 +9,9 @@
         "dev": "tsup src/server.ts --format esm --watch"
     },
     "dependencies": {
+        "@types/express": "^5.0.1",
+        "@types/node": "^20.17.25",
+        "@types/pg": "^8.11.11",
         "class-transformer": "^0.5.1",
         "dotenv": "^16.4.7",
         "express": "^4.21.2",
