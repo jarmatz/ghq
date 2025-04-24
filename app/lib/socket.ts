@@ -7,10 +7,11 @@ declare global {
 
 // 
 export function getSocket(gameLobby: string): Socket {
+
     // if the socket is undefined globally
     if (!globalThis.socket) {
         // we open a new socket
-        globalThis.socket = io('http://localhost:4000', {
+        globalThis.socket = io(process.env.NEXT_PUBLIC_SOCKET_URL, {
             query: { game: gameLobby }
         });
     }
