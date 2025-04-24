@@ -22,7 +22,7 @@ function CopyComponent({name, player}: CopyProp) {
 
     const [copyStatus, setCopyStatus] = useState('');
     
-    const urlString: string = `https://localhost:3000/slaughterhouse/${name}?player=`;
+    const urlString: string = `${process.env.NEXT_PUBLIC_LOCAL_DOMAIN}/slaughterhouse/${name}?player=`;
     const size: number = urlString.length;
     const value: string = `${urlString}${player}`;
 
