@@ -1185,7 +1185,7 @@ io.on("connection", async (socket) => {
     console.log(`Socket ${socket.id} left lobby ${gameLobby}`);
   });
 });
-var PORT = 4e3;
+var PORT = process.env.PORT;
 httpServer.listen(PORT, () => {
   console.log(`Socket.IO listening on ${PORT}`);
 });

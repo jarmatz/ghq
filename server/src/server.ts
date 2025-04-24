@@ -54,7 +54,7 @@ io.on('connection', async (socket) => {
     });
 });
 
-const PORT = 4000;
+const PORT = process.env.PORT;
 httpServer.listen(PORT, () => {
     console.log(`Socket.IO listening on ${PORT}`);
 });
