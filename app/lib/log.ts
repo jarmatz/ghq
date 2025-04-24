@@ -60,5 +60,8 @@ export function logifyAction(action: GameAction, snapshot: Board): Log {
     // a nifty pattern for capitalizing the start:
     text = text[0].toUpperCase() + text.slice(1);
 
+    // grammatically correcting "a" to "an" when necessary
+    text = text.replaceAll(' a a', ' an a');
+
     return new Log(text, snapshot, activeIDs, captureIDs);
 }
