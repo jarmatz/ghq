@@ -40,10 +40,12 @@ function Header() {
 
 function Disclaimer() {
     return (
-        <p style={{fontSize: '.8em', marginTop:30}}>
-            *Note that anyone with your unique lobby name can enter your game. And anyone can play as either color.
-            We're on the honor system here, so be kind to each other and ask: WWKD? (What would Kurt do?)
-        </p>
+        <div style={{fontSize: '.8em', marginTop:30}}>
+            <p >
+                *Note that anyone with your unique lobby name can enter your game. And anyone can play as either color.
+                We're on the honor system here, so be kind to each other and ask: WWKD? (What would Kurt do?)
+            </p>
+        </div>
     )
 }
 

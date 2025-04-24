@@ -22,7 +22,7 @@ export default function Home() {
           <h3>Infantry will automatically engage with each other when possible:</h3>
           <Image src='/gifs/engagement.gif' alt='engagement' width='120' height='120' className='gif'/>
           
-          <h3>If an infantry can capture one more more infantry units, crosshairs will appear.
+          <h3>If an infantry can capture one or more infantry units, crosshairs will appear.
             Click on one to execute the capture:
           </h3>
           <Image src='/gifs/infantry-capture.gif' alt='infantry-capture' width='120' height='120' className='gif'/>
