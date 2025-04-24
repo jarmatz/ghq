@@ -73,7 +73,8 @@ export default function Home() {
     }
 
     return (
-        <div>
+        <div style={{margin: 10, lineHeight: 2}}>
+            <p>Create a new game, or load into an existing one:</p>
             <form onSubmit={handleSubmit}>
                 <input value={name} type ='text' name='name' required placeholder='Lobby name'autoComplete='off'
                     onChange={(e) => setName(e.target.value)}>
