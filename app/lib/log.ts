@@ -63,5 +63,8 @@ export function logifyAction(action: GameAction, snapshot: Board): Log {
     // grammatically correcting "a" to "an" when necessary
     text = text.replaceAll(' a a', ' an a');
 
+    // remove "standard" from "standard hq" and change the article
+    text = text.replaceAll('a standard hq', 'an HQ');
+
     return new Log(text, snapshot, activeIDs, captureIDs);
 }

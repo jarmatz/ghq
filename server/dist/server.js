@@ -1003,6 +1003,7 @@ function logifyAction(action, snapshot) {
   text += ".";
   text = text[0].toUpperCase() + text.slice(1);
   text = text.replaceAll(" a a", " an a");
+  text = text.replaceAll("a standard hq", "an HQ");
   return new Log(text, snapshot, activeIDs, captureIDs);
 }
 
@@ -1169,7 +1170,9 @@ var io = new Server(httpServer, {
   cors: {
     origin: [
       "http://localhost:3000",
-      "https://ghq-ten.vercel.app"
+      "https://ghq-ten.vercel.app",
+      "https://ghqboardgame.com",
+      "https://www.ghqboardgame.com"
     ],
     methods: ["GET", "POST"]
   }
