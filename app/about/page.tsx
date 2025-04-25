@@ -5,7 +5,7 @@ export default function Page() {
     return (
         <div className="content">
             <h1>About:</h1>
-            <div style={{transform: 'translate(190px)'}}>
+            <div className="centered">
             <Image src='/butthole.webp' alt='bultthole' width='140' height='140' />
             </div>
             <p>

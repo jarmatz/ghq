@@ -11,7 +11,7 @@ export default function Home() {
         (This will look prettier eventually.)
       </p>
       <br></br>
-      <div style={{transform: 'translate(190px)'}}>
+      <div className='centered'>
         <Image src='/butthole.webp' alt='bultthole' width='140' height='140' />
       </div>
       <br></br>
