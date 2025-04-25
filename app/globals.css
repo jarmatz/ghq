@@ -63,6 +63,18 @@ a:hover {
   width: 600px;
 }
 
+@media (max-width: 800px) {
+  .content {
+    margin-left: 10px;
+    margin-right: 10px;
+    width: 90vw;
+    max-width: 600px;
+  }
+  .footer {
+    margin-left: 10px;
+  }
+}
+
 .boardLogWrapper {
   display: flex;
   justify-content: center;

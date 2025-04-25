@@ -8,7 +8,7 @@ export default function Home() {
           Here's a quick overview of the controls:
         </h1>
         <br></br>
-          <div style={{width: 600}}>
+          <div>
           <h3>Click on a piece to activate it and see available moves. Click again to move.
             Pieces that have already moved show a "lock" icon:
           </h3>

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import 'reflect-metadata';
 import "./globals.css";
@@ -17,6 +17,13 @@ export const metadata: Metadata = {
   title: "Play GHQ",
   description: 'Play the long lost board game designed by Kurt Vonnegut'
 };
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+}
 
 export default function RootLayout({
   children,

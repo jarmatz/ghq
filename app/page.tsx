@@ -55,6 +55,10 @@ export default function Home() {
         And check out my own <a href='/ui-tutorial'>(very short) guide</a> to the game's online controls.
       </p>
       <br></br>
+      <p>
+        Unfortunately, mobile is not currently supported.
+      </p>
+      <br></br>
       <br></br>
       <p style={{fontSize: '.8em'}}>
         *Friend not included.
