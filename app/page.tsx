@@ -26,7 +26,7 @@ export default function Home() {
         What is this?
       </h2>
       <p>
-        GHQ is a "lost" board game designed by legendary author Kurt Vonnegut
+        General Headquarters is a "lost" board game designed by legendary author Kurt Vonnegut
         and adapted for modern play by Geoff Engelstein.
       </p>
       <br></br>
@@ -47,7 +47,7 @@ export default function Home() {
       </p>
       <br></br>
       <p>
-        You may also find the game's <a href='https://s3.amazonaws.com/geekdo-files.com/bgg397937?response-content-disposition=inline%3B%20filename%3D%22GHQ_Rules_7x7_03_22_2024.pdf%22&response-content-type=application%2Fpdf&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAJYFNCT7FKCE4O6TA%2F20250424%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20250424T185916Z&X-Amz-SignedHeaders=host&X-Amz-Expires=120&X-Amz-Signature=8dd966c02f994a016271e0de03649df8bfdd4d7e8375406acdec769d6ddc27e7' target='_blank'>
+        You may also find the game's <a href='https://boardgamegeek.com/file/download_redirect/53bd115cb79ae8dfffb1e739393345e644eaed1f6f2991de/GHQ+Rules+7x7+03+22+2024.pdf' target='_blank'>
         printed rules</a> useful to consult.
       </p>
       <br></br>
