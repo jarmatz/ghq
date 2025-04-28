@@ -47,7 +47,7 @@ export default function Home() {
       </p>
       <br></br>
       <p>
-        You may also find the game's <a href='https://boardgamegeek.com/file/download_redirect/53bd115cb79ae8dfffb1e739393345e644eaed1f6f2991de/GHQ+Rules+7x7+03+22+2024.pdf' target='_blank'>
+        You may also find the game's <a href='https://boardgamegeek.com/filepage/285688/ghq-rules' target='_blank'>
         printed rules</a> useful to consult.
       </p>
       <br></br>

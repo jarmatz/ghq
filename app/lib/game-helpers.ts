@@ -63,6 +63,7 @@ export function move(piece: Piece, board: Board, maxMoves: number): Square[] {
                     if (target.bombardment !== 'both' &&
                         target.bombardment !== invertPlayer(piece.player) &&
                         // and it is not the case that the piece is adjacent to enemy and the  target is in a zone of control
+                        // and the piece we're moving is infantry
                         !(checkAdjacency(piece, board) && checkZoneControl(target, invertPlayer(piece.player), board))) {
                         // hurray we can move here
                         potentialMoves.push(target);
