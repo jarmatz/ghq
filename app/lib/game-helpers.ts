@@ -4,7 +4,7 @@ import { ROWS, COLUMNS } from './game-config';
 export type Vector = {row: number, column: number};
 
 // this takes as input a piece and then returns possible moves
-// they are returned as an array square IDs
+// they are returned as an array square ID strings
 export function checkMoves(piece: Piece, board: Board): string[] {
 
     let potentialMoves: Square[] = [];
@@ -64,7 +64,7 @@ export function move(piece: Piece, board: Board, maxMoves: number): Square[] {
                         target.bombardment !== invertPlayer(piece.player) &&
                         // and it is not the case that the piece is adjacent to enemy and the  target is in a zone of control
                         // and the piece we're moving is infantry
-                        !(checkAdjacency(piece, board) && checkZoneControl(target, invertPlayer(piece.player), board))) {
+                        !((piece.type === 'infantry') && checkAdjacency(piece, board) && checkZoneControl(target, invertPlayer(piece.player), board))) {
                         // hurray we can move here
                         potentialMoves.push(target);
                         // if we can move here, let's check the next square over
@@ -84,27 +84,6 @@ export function move(piece: Piece, board: Board, maxMoves: number): Square[] {
     return potentialMoves;
 }
 
-// checks if the target square is surrounded by two or more unengaged infantry
-// we prevent opposing infantry from going there
-export function isDoubleOpposed(source: Square, activePlayer: Player, board: Board): boolean {
-    const opposingPlayer: Player = invertPlayer(activePlayer);
-    const vectors: Vector[] = [{row: 0, column: 1}, {row: 1, column: 0}, {row: 0, column: -1}, {row: -1, column: 0}];
-    let count: number = 0;
-
-    for (let vector of vectors) {
-        if (isOnGrid(source.row + vector.row, source.column + vector.column)) {
-            const target = board[source.row + vector.row][source.column + vector.column];
-            // if the target piece is opposing, unengaged, infantry, increment the count
-            if (target.piece?.type === 'infantry' && target.piece?.player === opposingPlayer && target.piece?.engaged === false) {
-                count++;
-            }
-        }
-        if (count >= 2) {
-            return true;
-        }
-    }
-    return false;
-}
 
 // scans the whole board for artillery then correctly sets bombardments in the appropriate squares
 export function setBombardments(board: Board): Board {
@@ -166,6 +145,28 @@ export function isOnGrid(row: number, column: number): boolean {
     }
 }
 
+// checks if the target square is surrounded by two or more unengaged infantry
+// we prevent opposing infantry from going there
+export function isDoubleOpposed(source: Square, activePlayer: Player, board: Board): boolean {
+    const opposingPlayer: Player = invertPlayer(activePlayer);
+    const vectors: Vector[] = [{row: 0, column: 1}, {row: 1, column: 0}, {row: 0, column: -1}, {row: -1, column: 0}];
+    let count: number = 0;
+
+    for (let vector of vectors) {
+        if (isOnGrid(source.row + vector.row, source.column + vector.column)) {
+            const target = board[source.row + vector.row][source.column + vector.column];
+            // if the target piece is opposing, unengaged, infantry, increment the count
+            if (target.piece?.type === 'infantry' && target.piece?.player === opposingPlayer && target.piece?.engaged === false) {
+                count++;
+            }
+        }
+        if (count >= 2) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // checks the whole board for a condition
 // returning an array of all squares that satisfy it
 export function scanBoard(condition: (square: Square) => boolean, board: Board): Square[] {
@@ -182,6 +183,7 @@ export function scanBoard(condition: (square: Square) => boolean, board: Board):
 
 // checks if a square is in an enemy infantry's "zone of control"
 // useful for enforcing movement rules for engaged pieces
+// only checks via proximity, not engagement status
 export function checkZoneControl(square: Square, player: Player, board: Board): boolean {  
 
     // iterate over the cardinal vectors to see if there's opposing infantry
@@ -394,6 +396,7 @@ export function parseID(id: string): {row: number, column: number} {
     const regExp = /^\d+$/;
     if (id.length !== 2 || !regExp.test(id)) {
         console.error('tried to parse a malformed ID');
+        // return negatives for error
         return {row: -1, column: -1};
     }
     const rowDigit: number = Number(id[0])

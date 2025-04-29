@@ -28,7 +28,7 @@ export class GameCache {
     public get(key: string): Game | undefined {
         // a get call should update the keys array order, but only if the entry exists
         if (this.map.has(key)) {
-            // remove the existing entry and replace it
+            // remove the existing entry and replace it at the end
             this.keys = this.keys.filter(entry => entry !== key);
             this.keys.push(key);
         }
@@ -73,6 +73,8 @@ declare global {
 // ?? the nullish operator means "if the value to the left is undefined, use the value to the right"
 const gameCache = globalThis.gameCache ?? new GameCache();
 if (process.env.NODE_ENV !== 'production') {
+    // not gonna lie, i'm not sure what this is doing here, but i don't understand enough about how
+    // global vars and hot realoading work to futz with it. it came up in some examples
     globalThis.gameCache = gameCache;
 }
 

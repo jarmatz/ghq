@@ -36,6 +36,7 @@ export function setDefaultRotations(board: Board): Board {
 export function setEngagements(board: Board, lastMoved?: Square): Board {
     let lastMovedID: string;
     // if it's undefined we just set it to a garbage string
+    // this way it'll never match when we perform conditional checks on the ID
     if (lastMoved === undefined) {
         lastMovedID = 'zz';
     }
@@ -77,6 +78,7 @@ export function setEngagements(board: Board, lastMoved?: Square): Board {
         }
     }
     // handle last moved
+    // probably due for a refactor to modularize all this repeated code
     if (lastMoved !== undefined) {
         const vectors: Vector[] = [{row: 0, column: 1}, {row: 1, column: 0}, {row: 0, column: -1}, {row: -1, column: 0}];
         for (let vector of vectors) {
@@ -146,12 +148,7 @@ function wipeEngagements(board: Board): Board {
             if (square.piece) {
                 square.piece.engaged = false;
                 if (square.piece.type === 'infantry') {
-                    if (square.piece.player === 'blue') {
-                        square.piece.rotation = 0;
-                    }
-                    else {
-                        square.piece.rotation = 180;
-                    }
+                    square.piece.rotation = defaultRotation(square.piece.player);
                 }
             }
         }
