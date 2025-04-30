@@ -158,8 +158,11 @@ function move(piece, board, maxMoves) {
         let targetRow = row * move2 + piece.row, targetColumn = column * move2 + piece.column;
         if (isOnGrid(targetRow, targetColumn) && !board[targetRow][targetColumn].isOccupied()) {
           let target = board[targetRow][targetColumn];
-          if (target.bombardment !== "both" && target.bombardment !== invertPlayer(piece.player) && // and it is not the case that the piece is adjacent to enemy and the  target is in a zone of control
-          !(checkAdjacency(piece, board) && checkZoneControl(target, invertPlayer(piece.player), board))) {
+          if (target.bombardment !== "both" && target.bombardment !== invertPlayer(piece.player) && // and it is not the case that the piece is at once:
+          // 1) an infantry unit
+          // 2) adjacent to enemy infantry
+          // 3) the target is in enemy infantry's zone of control
+          !(piece.type === "infantry" && checkAdjacency(piece, board) && checkZoneControl(target, invertPlayer(piece.player), board))) {
             potentialMoves.push(target);
             move2++;
           } else {
@@ -172,23 +175,6 @@ function move(piece, board, maxMoves) {
     }
   }
   return potentialMoves;
-}
-function isDoubleOpposed(source, activePlayer, board) {
-  const opposingPlayer = invertPlayer(activePlayer);
-  const vectors = [{ row: 0, column: 1 }, { row: 1, column: 0 }, { row: 0, column: -1 }, { row: -1, column: 0 }];
-  let count = 0;
-  for (let vector of vectors) {
-    if (isOnGrid(source.row + vector.row, source.column + vector.column)) {
-      const target = board[source.row + vector.row][source.column + vector.column];
-      if (target.piece?.type === "infantry" && target.piece?.player === opposingPlayer && target.piece?.engaged === false) {
-        count++;
-      }
-    }
-    if (count >= 2) {
-      return true;
-    }
-  }
-  return false;
 }
 function setBombardments(board) {
   board = wipeBombardments(board);
@@ -229,6 +215,23 @@ function isOnGrid(row, column) {
   } else {
     return false;
   }
+}
+function isDoubleOpposed(source, activePlayer, board) {
+  const opposingPlayer = invertPlayer(activePlayer);
+  const vectors = [{ row: 0, column: 1 }, { row: 1, column: 0 }, { row: 0, column: -1 }, { row: -1, column: 0 }];
+  let count = 0;
+  for (let vector of vectors) {
+    if (isOnGrid(source.row + vector.row, source.column + vector.column)) {
+      const target = board[source.row + vector.row][source.column + vector.column];
+      if (target.piece?.type === "infantry" && target.piece?.player === opposingPlayer && target.piece?.engaged === false) {
+        count++;
+      }
+    }
+    if (count >= 2) {
+      return true;
+    }
+  }
+  return false;
 }
 function scanBoard(condition, board) {
   const resultSquares = [];
@@ -377,6 +380,13 @@ function dashCount(name) {
     }
   }
   return dashCount2;
+}
+function defaultRotation(player) {
+  if (player === "red") {
+    return 180;
+  } else {
+    return 0;
+  }
 }
 
 // ../app/lib/game-objects.ts
@@ -686,14 +696,21 @@ function setEngagements(board, lastMoved) {
     lastMovedID = lastMoved.getID();
   }
   const potentialEngagements = checkEngagements(board);
+  if (lastMoved !== void 0) {
+    let lastMovedIndex = potentialEngagements.findIndex((potentialEngagement) => potentialEngagement.source.getID() === lastMovedID);
+    if (lastMovedIndex !== -1) {
+      const lastMovedEngagement = potentialEngagements[lastMovedIndex];
+      potentialEngagements.splice(lastMovedIndex, 1);
+      potentialEngagements.push(lastMovedEngagement);
+    }
+  }
   for (let count = 1; count <= 4; count++) {
     for (let potentialEngagement of potentialEngagements) {
-      if (potentialEngagement.count === count && potentialEngagement.source.piece.engaged === false && potentialEngagement.source.getID() !== lastMovedID) {
+      if (potentialEngagement.count === count && potentialEngagement.source.piece.engaged === false) {
         for (let target of potentialEngagement.targets) {
           if (target.piece.engaged === false && target.getID() !== lastMovedID) {
             potentialEngagement.source.piece.engaged = true;
             target.piece.engaged = true;
-            console.log(`engaged ${potentialEngagement.source.getID()} to ${target.getID()}`);
             let diffVector = {
               row: target.row - potentialEngagement.source.row,
               column: target.column - potentialEngagement.source.column
@@ -702,26 +719,6 @@ function setEngagements(board, lastMoved) {
             potentialEngagement.source.piece.rotation = sourceAngle;
             target.piece.rotation = (sourceAngle + 180) % 360;
           }
-        }
-      }
-    }
-  }
-  if (lastMoved !== void 0) {
-    const vectors = [{ row: 0, column: 1 }, { row: 1, column: 0 }, { row: 0, column: -1 }, { row: -1, column: 0 }];
-    for (let vector of vectors) {
-      if (isOnGrid(lastMoved.row + vector.row, lastMoved.column + vector.column)) {
-        const target = board[lastMoved.row + vector.row][lastMoved.column + vector.column];
-        if (target.piece?.type === "infantry" && target.piece?.player !== lastMoved.piece?.player && !target.piece.engaged) {
-          console.log("engaged last moved piece");
-          lastMoved.piece.engaged = true;
-          target.piece.engaged = true;
-          let diffVector = {
-            row: target.row - lastMoved.row,
-            column: target.column - lastMoved.column
-          };
-          let sourceAngle = deVectorize(diffVector);
-          lastMoved.piece.rotation = sourceAngle;
-          target.piece.rotation = (sourceAngle + 180) % 360;
         }
       }
     }
@@ -757,11 +754,7 @@ function wipeEngagements(board) {
       if (square.piece) {
         square.piece.engaged = false;
         if (square.piece.type === "infantry") {
-          if (square.piece.player === "blue") {
-            square.piece.rotation = 0;
-          } else {
-            square.piece.rotation = 180;
-          }
+          square.piece.rotation = defaultRotation(square.piece.player);
         }
       }
     }
