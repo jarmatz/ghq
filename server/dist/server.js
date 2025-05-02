@@ -125,7 +125,6 @@ var standardSetup = {
 // ../app/lib/game-helpers.ts
 var cardinals = [{ row: 0, column: 1 }, { row: 1, column: 0 }, { row: 0, column: -1 }, { row: -1, column: 0 }];
 function checkMoves(piece, board) {
-  console.log("check moves debug");
   let potentialMoves = [];
   let backRank;
   piece.player === "blue" ? backRank = 7 : backRank = 0;
@@ -662,25 +661,33 @@ var PotentialEngagement = class {
   }
 };
 function setEngagements(board, privileged) {
+  console.log("main call");
   if (privileged === void 0) {
+    console.log("returning with no privilege");
     return setEngagementsInner(board).board;
   }
   if (setEngagementsInner(board, privileged).count < setEngagementsInner(board).count) {
+    console.log("returning with no privilege after comparing");
+    console.log(`priviliged engagements are ${setEngagementsInner(board, privileged).count}`);
+    console.log(`raw engagements are ${setEngagementsInner(board).count}`);
     return setEngagementsInner(board).board;
   } else {
+    console.log("returning with privilege after comparing");
     return setEngagementsInner(board, privileged).board;
   }
 }
 function setEngagementsInner(board, privileged) {
-  let privilegedID;
-  privileged === void 0 ? privilegedID = "zz" : privilegedID = privileged.getID();
   board = wipeEngagements(board);
+  if (privileged && privileged.piece) {
+    privileged.piece.engaged = true;
+  }
   let unengagedInfantrySquares = scanBoard(
-    (square) => square.piece?.type === "infantry" && square.getID() !== privilegedID,
+    (square) => square.piece?.type === "infantry" && square.piece?.engaged === false,
     board
   );
-  let potentialSingleEngagements = getPotentialEngagements(unengagedInfantrySquares, privilegedID, board, 1);
+  let potentialSingleEngagements = getPotentialEngagements(unengagedInfantrySquares, board, 1);
   while (potentialSingleEngagements.length > 0) {
+    let debugCount = 0;
     for (let potentialEngagement of potentialSingleEngagements) {
       let source = potentialEngagement.source;
       if (potentialEngagement.count > 1) {
@@ -690,28 +697,25 @@ function setEngagementsInner(board, privileged) {
       engage(source, target);
     }
     unengagedInfantrySquares = scanBoard(
-      (square) => square.piece?.type === "infantry" && square.getID() !== privilegedID,
+      (square) => square.piece?.type === "infantry" && square.piece?.engaged === false,
       board
     );
-    potentialSingleEngagements = getPotentialEngagements(unengagedInfantrySquares, privilegedID, board, 1);
+    potentialSingleEngagements = getPotentialEngagements(unengagedInfantrySquares, board, 1);
   }
-  if (privileged) {
-    const privilegedPotentialEngagements = getPotentialEngagements([privileged], privilegedID, board);
+  if (privileged && privileged.piece) {
+    privileged.piece.engaged = false;
+    const privilegedPotentialEngagements = getPotentialEngagements([privileged], board);
     if (privilegedPotentialEngagements.length > 0) {
       const privilegedPotentialEngagement = privilegedPotentialEngagements[0];
       const source = privilegedPotentialEngagement.source;
-      for (let target of privilegedPotentialEngagement.targets) {
-        if (target.piece && !target.piece.engaged && source.piece && !source.piece.engaged) {
-          engage(source, target);
-          break;
-        }
-      }
+      const targets = privilegedPotentialEngagement.targets;
+      engage(source, targets[0]);
     }
   }
   const engagedSquares = scanBoard((square) => square.piece !== null && square.piece.engaged, board);
   return { count: engagedSquares.length, board };
 }
-function getPotentialEngagements(squares, privilegedID, board, maxEngagementTargets) {
+function getPotentialEngagements(squares, board, maxEngagementTargets) {
   if (maxEngagementTargets === void 0) {
     maxEngagementTargets = 4;
   }
@@ -719,9 +723,9 @@ function getPotentialEngagements(squares, privilegedID, board, maxEngagementTarg
   for (let source of squares) {
     const targets = [];
     for (let direction of cardinals) {
-      if (isOnGrid(source.row + direction.row, source.column + direction.column) && source.piece && !source.piece.engaged) {
+      if (isOnGrid(source.row + direction.row, source.column + direction.column) && source.piece && source.piece.engaged === false) {
         const target = board[source.row + direction.row][source.column + direction.column];
-        if (target.piece?.type === "infantry" && target.piece.player !== source.piece?.player && !target.piece.engaged && target.getID() !== privilegedID) {
+        if (target.piece?.type === "infantry" && target.piece.player !== source.piece?.player && target.piece.engaged === false) {
           targets.push(target);
         }
       }
@@ -734,6 +738,9 @@ function getPotentialEngagements(squares, privilegedID, board, maxEngagementTarg
 }
 function engage(source, target) {
   if (!source.piece || !target.piece) {
+    return;
+  }
+  if (source.piece.engaged === true || target.piece.engaged === true) {
     return;
   }
   source.piece.engaged = true;

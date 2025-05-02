@@ -8,8 +8,6 @@ export const cardinals: Vector[] = [{row: 0, column: 1}, {row: 1, column: 0}, {r
 // they are returned as an array square ID strings
 export function checkMoves(piece: Piece, board: Board): string[] {
 
-    console.log('check moves debug');
-
     let potentialMoves: Square[] = [];
     let backRank: number;
     piece.player === 'blue' ?  backRank = 7 : backRank = 0;
