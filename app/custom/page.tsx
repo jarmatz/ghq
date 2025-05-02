@@ -51,6 +51,7 @@ function Disclaimer() {
             </p>
             <p>
                 The last two characters are digits defining the position, from 00 (top left) to 77 (bottom right).
+                First digit is row. Second digit is column.
             </p>
             <br></br>
             <p>
