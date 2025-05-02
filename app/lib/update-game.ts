@@ -60,18 +60,15 @@ export function validate(action: GameAction, game: Game): Game | null {
     switch (action.type) {
         case 'move': {
             if (!action.piece || !action.source || !action.target || action.rotation === null) {
-                console.log('1')
                 return null;
             }
             // the piece should really be where it says it is!
             if (action.piece.name !== game.board[action.source.row][action.source.column].piece?.name) {
-                console.log('2')
                 return null;
             }
             // check that the moves are kosher:
             const potentialMoves: string[] = checkMoves(action.piece, game.board);
             if (!potentialMoves.includes(action.target.getID())) {
-                console.log('3')
                 return null;
             }
             // if we made it this far, we execute the action

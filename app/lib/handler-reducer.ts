@@ -264,7 +264,10 @@ export function sessionReducer (session: WritableDraft<Session | null>, action: 
                 // activate the piece
                 session.ui.activePiece = action.piece;
                 session.ui.rotationMemory = action.piece.rotation;
+                // get the board reference to the source square
+                const source: Square = session.game.board[action.square.row][action.square.column];
                 // add the checked moves to the potential moves UI so we can render them visually
+                session.game.board = setEngagements(session.game.board, source);
                 session.ui.potentialMoves = checkMoves(action.piece, session.game.board);
                 if (session.ui.activePiece?.type === 'infantry') {
                     // add potential captures to the UI in rare case of stationary capture

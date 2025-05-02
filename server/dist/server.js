@@ -125,6 +125,7 @@ var standardSetup = {
 // ../app/lib/game-helpers.ts
 var cardinals = [{ row: 0, column: 1 }, { row: 1, column: 0 }, { row: 0, column: -1 }, { row: -1, column: 0 }];
 function checkMoves(piece, board) {
+  console.log("check moves debug");
   let potentialMoves = [];
   let backRank;
   piece.player === "blue" ? backRank = 7 : backRank = 0;
@@ -1021,16 +1022,13 @@ function validate(action, game) {
   switch (action.type) {
     case "move": {
       if (!action.piece || !action.source || !action.target || action.rotation === null) {
-        console.log("1");
         return null;
       }
       if (action.piece.name !== game.board[action.source.row][action.source.column].piece?.name) {
-        console.log("2");
         return null;
       }
       const potentialMoves = checkMoves(action.piece, game.board);
       if (!potentialMoves.includes(action.target.getID())) {
-        console.log("3");
         return null;
       }
       const target = game.board[action.target.row][action.target.column];
