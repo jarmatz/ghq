@@ -227,6 +227,7 @@ export function sessionReducer (session: WritableDraft<Session | null>, action: 
         const newGame = plainToInstance(Game, action.game as Game);
         const newSession = new Session(newGame, new UI(action.player));
         newSession.game = upkeep(newSession.game);
+        newSession.game.board = setEngagements(newSession.game.board);
         // SINCE IT'S A NEW INSTANCE WE MUST RETURN IT!!
         return newSession;
     }
@@ -285,6 +286,10 @@ export function sessionReducer (session: WritableDraft<Session | null>, action: 
                 session.ui.gameAction = session.ui.preAction.addRotation(session.ui.rotationMemory);
                 session.ui.activePiece.depleted = true;
                 session.game.actionsLeft = action.actions - 1;
+            }
+            // if it's an infantry let's return to the previous engagement state
+            if (session.ui.activePiece?.type === 'infantry') {
+                session.game.board = setEngagements(session.game.board);
             }
             // wipe the board and ui
             session.ui = deactivateUI(session.ui);

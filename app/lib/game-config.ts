@@ -2,8 +2,16 @@
 export const ROWS: number = 8;
 export const COLUMNS: number = 8;
 
+export type BoardConfigEntry = {
+        name: string,
+        row: number,
+        column: number
+}
+
+export type BoardConfig = BoardConfigEntry[];
+
 // initial setup of reserve counts and piece placement
-export const setup = {
+export const standardSetup = {
     trayConfig: [
         {name: "standard-infantry", count: 5},
         {name: "armored-infantry", count: 3},
@@ -25,4 +33,3 @@ export const setup = {
         {name: "blue-standard-infantry", row: 6, column: 5},
     ]
 }
-

@@ -2,6 +2,7 @@ import { Game, Piece, Player, Board, Square } from './game-objects';
 import { ROWS, COLUMNS } from './game-config';
 
 export type Vector = {row: number, column: number};
+export const cardinals: Vector[] = [{row: 0, column: 1}, {row: 1, column: 0}, {row: 0, column: -1}, {row: -1, column: 0}];
 
 // this takes as input a piece and then returns possible moves
 // they are returned as an array square ID strings
@@ -23,9 +24,12 @@ export function checkMoves(piece: Piece, board: Board): string[] {
         potentialMoves = move(piece, board, 1);
     }
     // for infantry, we exclude squares that are double opposed
+    // leaving this code for posterity:
+    /*
     if (piece.type === 'infantry') {
         potentialMoves = potentialMoves.filter((square) => !isDoubleOpposed(square, piece.player, board));
     }
+    */
     // return the array of IDs
     return potentialMoves.map((square) => square.getID());
 }
@@ -64,9 +68,9 @@ export function move(piece: Piece, board: Board, maxMoves: number): Square[] {
                         target.bombardment !== invertPlayer(piece.player) &&
                         // and it is not the case that the piece is at once:
                         // 1) an infantry unit
-                        // 2) adjacent to enemy infantry
+                        // 2) engaged
                         // 3) the target is in enemy infantry's zone of control
-                        !((piece.type === 'infantry') && checkAdjacency(piece, board) && checkZoneControl(target, invertPlayer(piece.player), board))) {
+                        !((piece.type === 'infantry') && piece.engaged && checkZoneControl(target, invertPlayer(piece.player), board))) {
                         // hurray we can move here
                         potentialMoves.push(target);
                         // if we can move here, let's check the next square over

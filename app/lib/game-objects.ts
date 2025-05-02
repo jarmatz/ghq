@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { immerable } from 'immer';
-import { ROWS, COLUMNS, setup } from './game-config';
+import { ROWS, COLUMNS, standardSetup, BoardConfig } from './game-config';
 import { parsePlayer, parseTag, parseType } from './game-helpers';
 import { Type } from 'class-transformer';
 
@@ -179,8 +179,8 @@ export class Trays {
     public red: Reserve[];
 
     constructor() {
-        this.blue = createTray('blue', setup.trayConfig)
-        this.red = createTray('red', setup.trayConfig)
+        this.blue = createTray('blue', standardSetup.trayConfig)
+        this.red = createTray('red', standardSetup.trayConfig)
     }
 }
 
@@ -262,9 +262,14 @@ export class Game {
     public winner: Player;
     public hqVictory: boolean;
 
-    constructor(name: string, hqVictory: boolean = false) {
+    constructor(name: string, hqVictory: boolean = false, boardConfig?: BoardConfig) {
         this.name = name;
-        this.board = setupBoard(setup.boardConfig);
+        if (boardConfig) {
+            this.board = setupBoard(boardConfig);
+        }
+        else {
+            this.board = setupBoard(standardSetup.boardConfig);
+        }
         this.activePlayer = 'blue';
         this.actionsLeft = 3;
         this.trays = new Trays();
