@@ -16,13 +16,36 @@ class PotentialEngagement {
     }
 }
 
+// a wrapper function that performs the setEngagements algo twice if we have a privileged square
+// it compares the engagement count in both results
+// then it decides if it can privilege the square
+// doing it if and only if it doesn't lead to fewer total engagements
+export function setEngagements(board: Board, privileged?: Square): Board {
+    
+    // if we don't have privileged, we do it simply and return
+    if (privileged === undefined) {
+        // return the board element of the function return
+        return setEngagementsLogic(board).board;
+    }
+    
+    // if using the privileged leads to fewer engagements
+    // return the result without using privileged
+    if (setEngagementsLogic(board, privileged).count < setEngagementsLogic(board).count) {
+        return setEngagementsLogic(board).board;
+    }
+    // otherwise we can use the privileged
+    else {
+        return setEngagementsLogic(board, privileged).board;
+    }
+}
+
 
 // takes the board, sets engagements, and returns a new board with pieces engaged and rotations set
 // this begins by asking for an array of potential engagements for all infantry by calling getPotentialEngagements
 // then it iterates through the array by each potentialengagement's "count"
 // the algo works by setting all pieces with only one engagement first, then two... up to max (4)
 // we delay processing the privileged (if any) until the end
-export function setEngagements(board: Board, privileged?: Square): Board {
+export function setEngagementsLogic(board: Board, privileged?: Square): {count: number, board: Board} {
 
     board = wipeEngagements(board);
 
@@ -85,7 +108,11 @@ export function setEngagements(board: Board, privileged?: Square): Board {
             }
         }
     }
-    return board;
+
+    // get the count of total engaged pieces
+    const engagedSquares: Square[] = scanBoard(square => (square.piece !== null && square.piece.engaged), board);
+
+    return {count: engagedSquares.length, board: board};
 }
 
 // this function takes as input a selection of squares passsed into it...

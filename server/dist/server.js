@@ -662,6 +662,16 @@ var PotentialEngagement = class {
   }
 };
 function setEngagements(board, privileged) {
+  if (privileged === void 0) {
+    return setEngagementsLogic(board).board;
+  }
+  if (setEngagementsLogic(board, privileged).count < setEngagementsLogic(board).count) {
+    return setEngagementsLogic(board).board;
+  } else {
+    return setEngagementsLogic(board, privileged).board;
+  }
+}
+function setEngagementsLogic(board, privileged) {
   board = wipeEngagements(board);
   let privilegedID;
   if (privileged === void 0) {
@@ -697,7 +707,8 @@ function setEngagements(board, privileged) {
       }
     }
   }
-  return board;
+  const engagedSquares = scanBoard((square) => square.piece !== null && square.piece.engaged, board);
+  return { count: engagedSquares.length, board };
 }
 function getPotentialEngagements(squares, board, maxEngagementTargets) {
   if (maxEngagementTargets === void 0) {

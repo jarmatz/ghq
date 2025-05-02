@@ -8,7 +8,8 @@
     "dev-server": "npx tsx server.ts",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "go": "npm run build && npm run start"
   },
   "dependencies": {
     "class-transformer": "^0.5.1",
