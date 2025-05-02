@@ -4,7 +4,7 @@ import { Game, Board, Player, GameAction, Log } from '@/app/lib/game-objects';
 import { setBombardments } from './game-helpers';
 import { setEngagements } from './engagement';
 
-// takes as input game instance (which is easier syntax for class transformer)
+// takes as input game instance (which is easier syntax for class transformer than board, a type)
 // and returns us a clone of its board state
 // useful for adding to the game log
 export function snapshotBoard(game: Game): Board {

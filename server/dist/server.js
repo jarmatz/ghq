@@ -663,39 +663,40 @@ var PotentialEngagement = class {
 };
 function setEngagements(board, privileged) {
   if (privileged === void 0) {
-    return setEngagementsLogic(board).board;
+    return setEngagementsInner(board).board;
   }
-  if (setEngagementsLogic(board, privileged).count < setEngagementsLogic(board).count) {
-    return setEngagementsLogic(board).board;
+  if (setEngagementsInner(board, privileged).count < setEngagementsInner(board).count) {
+    return setEngagementsInner(board).board;
   } else {
-    return setEngagementsLogic(board, privileged).board;
+    return setEngagementsInner(board, privileged).board;
   }
 }
-function setEngagementsLogic(board, privileged) {
-  board = wipeEngagements(board);
+function setEngagementsInner(board, privileged) {
   let privilegedID;
-  if (privileged === void 0) {
-    privilegedID = "zz";
-  } else {
-    privilegedID = privileged.getID();
-  }
-  const infantrySquares = scanBoard((square) => square.piece?.type === "infantry", board);
-  const potentialEngagements = getPotentialEngagements(infantrySquares, board);
-  for (let count = 1; count <= 4; count++) {
-    for (let potentialEngagement of potentialEngagements) {
-      const source = potentialEngagement.source;
-      if (potentialEngagement.count === count && source.piece && !source.piece.engaged && source.getID() !== privilegedID) {
-        for (let target of potentialEngagement.targets) {
-          if (target.piece && !target.piece.engaged && target.getID() !== privilegedID) {
-            engage(source, target);
-            break;
-          }
-        }
+  privileged === void 0 ? privilegedID = "zz" : privilegedID = privileged.getID();
+  board = wipeEngagements(board);
+  let unengagedInfantrySquares = scanBoard(
+    (square) => square.piece?.type === "infantry" && square.getID() !== privilegedID,
+    board
+  );
+  let potentialSingleEngagements = getPotentialEngagements(unengagedInfantrySquares, privilegedID, board, 1);
+  while (potentialSingleEngagements.length > 0) {
+    for (let potentialEngagement of potentialSingleEngagements) {
+      let source = potentialEngagement.source;
+      if (potentialEngagement.count > 1) {
+        console.error("potential engagement singles have more than one target");
       }
+      let target = potentialEngagement.targets[0];
+      engage(source, target);
     }
+    unengagedInfantrySquares = scanBoard(
+      (square) => square.piece?.type === "infantry" && square.getID() !== privilegedID,
+      board
+    );
+    potentialSingleEngagements = getPotentialEngagements(unengagedInfantrySquares, privilegedID, board, 1);
   }
   if (privileged) {
-    const privilegedPotentialEngagements = getPotentialEngagements([privileged], board);
+    const privilegedPotentialEngagements = getPotentialEngagements([privileged], privilegedID, board);
     if (privilegedPotentialEngagements.length > 0) {
       const privilegedPotentialEngagement = privilegedPotentialEngagements[0];
       const source = privilegedPotentialEngagement.source;
@@ -710,7 +711,7 @@ function setEngagementsLogic(board, privileged) {
   const engagedSquares = scanBoard((square) => square.piece !== null && square.piece.engaged, board);
   return { count: engagedSquares.length, board };
 }
-function getPotentialEngagements(squares, board, maxEngagementTargets) {
+function getPotentialEngagements(squares, privilegedID, board, maxEngagementTargets) {
   if (maxEngagementTargets === void 0) {
     maxEngagementTargets = 4;
   }
@@ -720,7 +721,7 @@ function getPotentialEngagements(squares, board, maxEngagementTargets) {
     for (let direction of cardinals) {
       if (isOnGrid(source.row + direction.row, source.column + direction.column) && source.piece && !source.piece.engaged) {
         const target = board[source.row + direction.row][source.column + direction.column];
-        if (target.piece?.type === "infantry" && target.piece.player !== source.piece?.player && !target.piece.engaged) {
+        if (target.piece?.type === "infantry" && target.piece.player !== source.piece?.player && !target.piece.engaged && target.getID() !== privilegedID) {
           targets.push(target);
         }
       }
@@ -737,7 +738,6 @@ function engage(source, target) {
   }
   source.piece.engaged = true;
   target.piece.engaged = true;
-  console.log(`engaged ${source.getID()} to ${target.getID()}`);
   let diffVector = {
     row: target.row - source.row,
     column: target.column - source.column
