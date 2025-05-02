@@ -8,6 +8,8 @@ export const cardinals: Vector[] = [{row: 0, column: 1}, {row: 1, column: 0}, {r
 // they are returned as an array square ID strings
 export function checkMoves(piece: Piece, board: Board): string[] {
 
+    console.log('check moves debug');
+
     let potentialMoves: Square[] = [];
     let backRank: number;
     piece.player === 'blue' ?  backRank = 7 : backRank = 0;
@@ -70,7 +72,8 @@ export function move(piece: Piece, board: Board, maxMoves: number): Square[] {
                         // 1) an infantry unit
                         // 2) engaged
                         // 3) the target is in enemy infantry's zone of control
-                        !((piece.type === 'infantry') && piece.engaged && checkZoneControl(target, invertPlayer(piece.player), board))) {
+                        !(piece.type === 'infantry' && piece.engaged && checkZoneControl(target, invertPlayer(piece.player), board))
+                    ) {
                         // hurray we can move here
                         potentialMoves.push(target);
                         // if we can move here, let's check the next square over
