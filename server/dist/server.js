@@ -99,7 +99,7 @@ import { immerable } from "immer";
 // ../app/lib/game-config.ts
 var ROWS = 8;
 var COLUMNS = 8;
-var setup = {
+var standardSetup = {
   trayConfig: [
     { name: "standard-infantry", count: 5 },
     { name: "armored-infantry", count: 3 },
@@ -123,6 +123,7 @@ var setup = {
 };
 
 // ../app/lib/game-helpers.ts
+var cardinals = [{ row: 0, column: 1 }, { row: 1, column: 0 }, { row: 0, column: -1 }, { row: -1, column: 0 }];
 function checkMoves(piece, board) {
   let potentialMoves = [];
   let backRank;
@@ -133,9 +134,6 @@ function checkMoves(piece, board) {
     potentialMoves = scanBoard((square) => !square.isOccupied() && !(square.bombardment === "both") && !(square.bombardment === invertPlayer(piece.player)), board);
   } else {
     potentialMoves = move(piece, board, 1);
-  }
-  if (piece.type === "infantry") {
-    potentialMoves = potentialMoves.filter((square) => !isDoubleOpposed(square, piece.player, board));
   }
   return potentialMoves.map((square) => square.getID());
 }
@@ -160,9 +158,9 @@ function move(piece, board, maxMoves) {
           let target = board[targetRow][targetColumn];
           if (target.bombardment !== "both" && target.bombardment !== invertPlayer(piece.player) && // and it is not the case that the piece is at once:
           // 1) an infantry unit
-          // 2) adjacent to enemy infantry
+          // 2) engaged
           // 3) the target is in enemy infantry's zone of control
-          !(piece.type === "infantry" && checkAdjacency(piece, board) && checkZoneControl(target, invertPlayer(piece.player), board))) {
+          !(piece.type === "infantry" && piece.engaged && checkZoneControl(target, invertPlayer(piece.player), board))) {
             potentialMoves.push(target);
             move2++;
           } else {
@@ -216,23 +214,6 @@ function isOnGrid(row, column) {
     return false;
   }
 }
-function isDoubleOpposed(source, activePlayer, board) {
-  const opposingPlayer = invertPlayer(activePlayer);
-  const vectors = [{ row: 0, column: 1 }, { row: 1, column: 0 }, { row: 0, column: -1 }, { row: -1, column: 0 }];
-  let count = 0;
-  for (let vector of vectors) {
-    if (isOnGrid(source.row + vector.row, source.column + vector.column)) {
-      const target = board[source.row + vector.row][source.column + vector.column];
-      if (target.piece?.type === "infantry" && target.piece?.player === opposingPlayer && target.piece?.engaged === false) {
-        count++;
-      }
-    }
-    if (count >= 2) {
-      return true;
-    }
-  }
-  return false;
-}
 function scanBoard(condition, board) {
   const resultSquares = [];
   for (let row = 0; row < ROWS; row++) {
@@ -250,19 +231,6 @@ function checkZoneControl(square, player, board) {
     if (isOnGrid(square.row + vector.row, square.column + vector.column)) {
       const target = board[square.row + vector.row][square.column + vector.column];
       if (target.piece?.type === "infantry" && target.piece?.player === player) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-function checkAdjacency(piece, board) {
-  const source = board[piece.row][piece.column];
-  let vectors = [{ row: 0, column: 1 }, { row: 1, column: 0 }, { row: 0, column: -1 }, { row: -1, column: 0 }];
-  for (let vector of vectors) {
-    if (isOnGrid(source.row + vector.row, source.column + vector.column)) {
-      const target = board[source.row + vector.row][source.column + vector.column];
-      if (target.piece?.type === "infantry" && target.piece?.player === invertPlayer(piece.player)) {
         return true;
       }
     }
@@ -498,8 +466,8 @@ _a3 = immerable;
 var Trays = class {
   constructor() {
     this[_a3] = true;
-    this.blue = createTray("blue", setup.trayConfig);
-    this.red = createTray("red", setup.trayConfig);
+    this.blue = createTray("blue", standardSetup.trayConfig);
+    this.red = createTray("red", standardSetup.trayConfig);
   }
 };
 __decorateClass([
@@ -565,10 +533,14 @@ __decorateClass([
 var _a6;
 _a6 = immerable;
 var Game = class {
-  constructor(name, hqVictory = false) {
+  constructor(name, hqVictory = false, boardConfig) {
     this[_a6] = true;
     this.name = name;
-    this.board = setupBoard(setup.boardConfig);
+    if (boardConfig) {
+      this.board = setupBoard(boardConfig);
+    } else {
+      this.board = setupBoard(standardSetup.boardConfig);
+    }
     this.activePlayer = "blue";
     this.actionsLeft = 3;
     this.trays = new Trays();
@@ -688,65 +660,79 @@ var PotentialEngagement = class {
     this.count = targets.length;
   }
 };
-function setEngagements(board, lastMoved) {
-  let lastMovedID;
-  if (lastMoved === void 0) {
-    lastMovedID = "zz";
+function setEngagements(board, privileged) {
+  board = wipeEngagements(board);
+  let privilegedID;
+  if (privileged === void 0) {
+    privilegedID = "zz";
   } else {
-    lastMovedID = lastMoved.getID();
+    privilegedID = privileged.getID();
   }
-  const potentialEngagements = checkEngagements(board);
-  if (lastMoved !== void 0) {
-    let lastMovedIndex = potentialEngagements.findIndex((potentialEngagement) => potentialEngagement.source.getID() === lastMovedID);
-    if (lastMovedIndex !== -1) {
-      const lastMovedEngagement = potentialEngagements[lastMovedIndex];
-      potentialEngagements.splice(lastMovedIndex, 1);
-      potentialEngagements.push(lastMovedEngagement);
-    }
-  }
+  const infantrySquares = scanBoard((square) => square.piece?.type === "infantry", board);
+  const potentialEngagements = getPotentialEngagements(infantrySquares, board);
   for (let count = 1; count <= 4; count++) {
     for (let potentialEngagement of potentialEngagements) {
-      if (potentialEngagement.count === count && potentialEngagement.source.piece.engaged === false) {
+      const source = potentialEngagement.source;
+      if (potentialEngagement.count === count && source.piece && !source.piece.engaged && source.getID() !== privilegedID) {
         for (let target of potentialEngagement.targets) {
-          if (target.piece.engaged === false && target.getID() !== lastMovedID) {
-            potentialEngagement.source.piece.engaged = true;
-            target.piece.engaged = true;
-            let diffVector = {
-              row: target.row - potentialEngagement.source.row,
-              column: target.column - potentialEngagement.source.column
-            };
-            let sourceAngle = deVectorize(diffVector);
-            potentialEngagement.source.piece.rotation = sourceAngle;
-            target.piece.rotation = (sourceAngle + 180) % 360;
+          if (target.piece && !target.piece.engaged && target.getID() !== privilegedID) {
+            engage(source, target);
+            break;
           }
+        }
+      }
+    }
+  }
+  if (privileged) {
+    const privilegedPotentialEngagements = getPotentialEngagements([privileged], board);
+    if (privilegedPotentialEngagements.length > 0) {
+      const privilegedPotentialEngagement = privilegedPotentialEngagements[0];
+      const source = privilegedPotentialEngagement.source;
+      for (let target of privilegedPotentialEngagement.targets) {
+        if (target.piece && !target.piece.engaged && source.piece && !source.piece.engaged) {
+          engage(source, target);
+          break;
         }
       }
     }
   }
   return board;
 }
-function checkEngagements(board) {
-  board = wipeEngagements(board);
+function getPotentialEngagements(squares, board, maxEngagementTargets) {
+  if (maxEngagementTargets === void 0) {
+    maxEngagementTargets = 4;
+  }
   const potentialEngagements = [];
-  const infantrySquares = [];
-  infantrySquares.push(...scanBoard((square) => square.piece?.type === "infantry", board));
-  for (let source of infantrySquares) {
-    const vectors = [{ row: 0, column: 1 }, { row: 1, column: 0 }, { row: 0, column: -1 }, { row: -1, column: 0 }];
+  for (let source of squares) {
     const targets = [];
-    for (let vector of vectors) {
-      if (isOnGrid(source.row + vector.row, source.column + vector.column)) {
-        const target = board[source.row + vector.row][source.column + vector.column];
-        if (target.piece?.type === "infantry" && target.piece.player !== source.piece?.player) {
+    for (let direction of cardinals) {
+      if (isOnGrid(source.row + direction.row, source.column + direction.column) && source.piece && !source.piece.engaged) {
+        const target = board[source.row + direction.row][source.column + direction.column];
+        if (target.piece?.type === "infantry" && target.piece.player !== source.piece?.player && !target.piece.engaged) {
           targets.push(target);
         }
       }
     }
-    if (targets.length > 0) {
+    if (targets.length > 0 && targets.length <= maxEngagementTargets) {
       potentialEngagements.push(new PotentialEngagement(source, targets));
     }
   }
-  ;
   return potentialEngagements;
+}
+function engage(source, target) {
+  if (!source.piece || !target.piece) {
+    return;
+  }
+  source.piece.engaged = true;
+  target.piece.engaged = true;
+  console.log(`engaged ${source.getID()} to ${target.getID()}`);
+  let diffVector = {
+    row: target.row - source.row,
+    column: target.column - source.column
+  };
+  let sourceAngle = deVectorize(diffVector);
+  source.piece.rotation = sourceAngle;
+  target.piece.rotation = (sourceAngle + 180) % 360;
 }
 function wipeEngagements(board) {
   for (let row of board) {
@@ -1035,13 +1021,16 @@ function validate(action, game) {
   switch (action.type) {
     case "move": {
       if (!action.piece || !action.source || !action.target || action.rotation === null) {
+        console.log("1");
         return null;
       }
       if (action.piece.name !== game.board[action.source.row][action.source.column].piece?.name) {
+        console.log("2");
         return null;
       }
       const potentialMoves = checkMoves(action.piece, game.board);
       if (!potentialMoves.includes(action.target.getID())) {
+        console.log("3");
         return null;
       }
       const target = game.board[action.target.row][action.target.column];

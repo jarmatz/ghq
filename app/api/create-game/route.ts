@@ -10,7 +10,7 @@ export async function POST (req: Request) {
     try {
         const body = await req.json();
         // destructuring the name field
-        const { name, hqVictoryOption } = body;
+        const { name, hqVictoryOption, customConfig } = body;
 
         if (!name || typeof name !== 'string') {
             return NextResponse.json({ sucess: false, error: 'Invalid name.' }, { status: 400 });
@@ -34,8 +34,10 @@ export async function POST (req: Request) {
             }
         }
         
-        // make the new game, with the correct victory settings
-        const newGame: Game = new Game(name, hqVictoryOption);
+        // make the new game, with the correct victory settings, and a custom config if one supplied
+        // if one isn't supplied the variable will be undefined
+        // the new Game constructor defaults to the standard setup if it is undefined
+        const newGame: Game = new Game(name, hqVictoryOption, customConfig);
 
         // this is the SQL query to insert, it will return error if name is a duplicate (table settings)
         await query('INSERT INTO games (name, data) VALUES ($1, $2)', [name, instanceToPlain(newGame)]);
