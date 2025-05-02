@@ -86,9 +86,10 @@ function setEngagementsInner(board: Board, privileged?: Square): {count: number,
         }
 
         // after processing all of these singles, we scan the board again for what is left unengaged
+        // here we must check engagement status
         // again we must ignore the privileged
         unengagedInfantrySquares = scanBoard(
-            square => (square.piece?.type === 'infantry' && square.getID() !== privilegedID), 
+            square => (square.piece?.type === 'infantry' && !square.piece?.engaged && square.getID() !== privilegedID), 
             board
         );
         // again we get only the singles + ignoring privileged
