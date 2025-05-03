@@ -62,44 +62,42 @@ function setEngagementsInner(board: Board, privileged?: Square): {count: number,
         board
     );
 
-    // we get a list of all possible source pieces with only ONE engagement target -- note the numerical parameter
-    let potentialSingleEngagements: PotentialEngagement[] = getPotentialEngagements(unengagedInfantrySquares, board, 1);
+    // we get a list of all possible engagements, not just singletons
+    let potentialEngagements: PotentialEngagement[] = getPotentialEngagements(unengagedInfantrySquares, board);
 
-    // the main loop
-    // as long as we have potential single engagements to process, we go
-    while (potentialSingleEngagements.length > 0) {
-
-        let debugCount = 0;
-
-        // we are only passing in singles so we don't need to check for count
-        // privileged is ignored as it is already engaged
-        for (let potentialEngagement of potentialSingleEngagements) {
-            // readability
-            let source = potentialEngagement.source;
-            // there should only be one target
-            // safety check
-            if (potentialEngagement.count > 1) {
-                console.error('potential engagement singles have more than one target')
+    // iterate over the count of possible engagements for each source
+    for (let count = 1; count <=4; count++) {
+        // labeling this so we can break from inner targets loop
+        engagementLoop: for (let potentialEngagement of potentialEngagements) {
+            // cleanup for readability
+            const source: Square = potentialEngagement.source;
+            // we only want ones that match the count that we're on and are not already engaged
+            if (potentialEngagement.count === count
+                // this is a safetycheck, these should be true
+                && source.piece && source.piece.engaged === false
+            ) {
+                // iterate over targets
+                for (let target of potentialEngagement.targets) {
+                    // check if the target is engaged
+                    if (target.piece && target.piece.engaged === false) {
+                        // if we got here, we're good to go
+                        engage(source, target)
+                        // now that we've engaged we RESET EVERYTHING AND GO AGAIN
+                        // get the list of unengaged squares (now excluding what we just engaged)
+                        unengagedInfantrySquares = scanBoard(
+                            square => (square.piece?.type === 'infantry' && square.piece?.engaged === false), 
+                            board
+                        );
+                        // get the fresh potentialEngagements objects for a fresh start
+                        potentialEngagements = getPotentialEngagements(unengagedInfantrySquares, board);
+                        // COUNT SET TO 0, WE WANT IT TO INCREMENT TO 1 AT THE END OF COUNT LOOP AND START FRESH
+                        count = 0;
+                        // now we break the engagement loop, return to count loop, which will start anew with count++
+                        break engagementLoop;
+                    }
+                }
             }
-            let target = potentialEngagement.targets[0];
-            // Picard: "Engage!"
-            engage(source, target);
         }
-
-        // after processing all of these singles, we scan the board again for what is left unengaged
-        // here we must check engagement status
-        // again we must ignore the privileged
-        unengagedInfantrySquares = scanBoard(
-            square => (square.piece?.type === 'infantry' && square.piece?.engaged === false), 
-            board
-        );
-
-        // again we get only the singles + ignoring privileged
-        potentialSingleEngagements = getPotentialEngagements(unengagedInfantrySquares, board, 1);
-        // if we have any more singles, the loop runs again
-
-        // end while loop block
-        // ----------------------------------------------------------------------------
     }
 
     // now we process the privileged if it exists
@@ -115,8 +113,7 @@ function setEngagementsInner(board: Board, privileged?: Square): {count: number,
             const source = privilegedPotentialEngagement.source;
             const targets = privilegedPotentialEngagement.targets;
             // engage arbirtarily to the first available target
-            engage(source, targets[0]);
-            
+            engage(source, targets[0]);         
         }
     }
      

@@ -661,18 +661,12 @@ var PotentialEngagement = class {
   }
 };
 function setEngagements(board, privileged) {
-  console.log("main call");
   if (privileged === void 0) {
-    console.log("returning with no privilege");
     return setEngagementsInner(board).board;
   }
   if (setEngagementsInner(board, privileged).count < setEngagementsInner(board).count) {
-    console.log("returning with no privilege after comparing");
-    console.log(`priviliged engagements are ${setEngagementsInner(board, privileged).count}`);
-    console.log(`raw engagements are ${setEngagementsInner(board).count}`);
     return setEngagementsInner(board).board;
   } else {
-    console.log("returning with privilege after comparing");
     return setEngagementsInner(board, privileged).board;
   }
 }
@@ -685,22 +679,25 @@ function setEngagementsInner(board, privileged) {
     (square) => square.piece?.type === "infantry" && square.piece?.engaged === false,
     board
   );
-  let potentialSingleEngagements = getPotentialEngagements(unengagedInfantrySquares, board, 1);
-  while (potentialSingleEngagements.length > 0) {
-    let debugCount = 0;
-    for (let potentialEngagement of potentialSingleEngagements) {
-      let source = potentialEngagement.source;
-      if (potentialEngagement.count > 1) {
-        console.error("potential engagement singles have more than one target");
+  let potentialEngagements = getPotentialEngagements(unengagedInfantrySquares, board);
+  for (let count = 1; count <= 4; count++) {
+    engagementLoop: for (let potentialEngagement of potentialEngagements) {
+      const source = potentialEngagement.source;
+      if (potentialEngagement.count === count && source.piece && source.piece.engaged === false) {
+        for (let target of potentialEngagement.targets) {
+          if (target.piece && target.piece.engaged === false) {
+            engage(source, target);
+            unengagedInfantrySquares = scanBoard(
+              (square) => square.piece?.type === "infantry" && square.piece?.engaged === false,
+              board
+            );
+            potentialEngagements = getPotentialEngagements(unengagedInfantrySquares, board);
+            count = 0;
+            break engagementLoop;
+          }
+        }
       }
-      let target = potentialEngagement.targets[0];
-      engage(source, target);
     }
-    unengagedInfantrySquares = scanBoard(
-      (square) => square.piece?.type === "infantry" && square.piece?.engaged === false,
-      board
-    );
-    potentialSingleEngagements = getPotentialEngagements(unengagedInfantrySquares, board, 1);
   }
   if (privileged && privileged.piece) {
     privileged.piece.engaged = false;
