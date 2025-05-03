@@ -41,9 +41,10 @@ export function setEngagements(board: Board, privileged?: Square): Board {
 
 // takes the board, sets engagements, and returns a new board with pieces engaged and rotations set
 // it also returns a count of the number of engagements, that we can use to decide if we allow privileged status in the outer function
-// this begins by asking for an array of potential engagements for all unengaged infantry by calling getPotentialEngagements
-// then it sets all units with only a single engagement option
-// it removes those units from the pool, then asks, given this new board state, which units only have one engagement option
+// this begins by finding all potential engagements for a given set of unengaged infantry squares
+// then it iterates through that list, beginning by looking for sources with only one potential engagement and counting up from there
+// NOTABLY, when it finds an engagement, it completely refreshes the process, getting a new set of potential engagements that account for
+// ... the new board state (so some units that had two targets might now have one), and it starts the count at 1 again
 // it keeps doing this until there are no more left to engage
 // we delay processing the privileged (if any) until the end by engaging it temporarily until the main loop is done
 function setEngagementsInner(board: Board, privileged?: Square): {count: number, board: Board} {
