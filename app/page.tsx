@@ -6,7 +6,7 @@ export default function Home() {
     <>
     <div className="announcement">
       <p>
-        For the latest, most complete adaptation, check out <a href="http://playghq.com">playghq.com</a>, built and maintained by Tyler Julian. &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;And <a href="https://discord.com/channels/1310369253756768327/1310369254700224607">join</a> the Discord community.
+        For the latest, most complete adaptation, check out <a href="http://playghq.com">playghq.com</a>. &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;And <a href="https://discord.com/channels/1310369253756768327/1310369254700224607">join</a> the Discord community.
       </p>
     </div>
     <div className='content'>
