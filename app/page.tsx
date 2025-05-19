@@ -3,7 +3,14 @@ import Footer from "./components/footer-component";
 
 export default function Home() {
   return (
+    <>
+    <div className="announcement">
+      <p>
+        For the latest, most complete adaptation, check out <a href="http://playghq.com">playghq.com</a>, built and maintained by Tyler Julian. &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;And <a href="https://discord.com/channels/1310369253756768327/1310369254700224607">join</a> the Discord community.
+      </p>
+    </div>
     <div className='content'>
+      
       <h1>
         Welcome to the GHQ Beta Test
       </h1>
@@ -65,5 +72,6 @@ export default function Home() {
       </p>
       <Footer />
     </div>
+    </>
   );
 }

@@ -377,3 +377,25 @@ a:hover {
     linear-gradient(var(--c1) calc(100%/3),var(--c2) 0 calc(200%/3),var(--c3) 0)
      0 0/var(--s) var(--s);
 }
+
+.announcement {
+  display: inline-block;
+  height: 100%;
+  text-align: center;
+  width: 100%;
+  background: #4b5a72;
+  color: white;
+  font-family: Arial, sans;
+  margin: 0;
+  padding: 12;
+  vertical-align: middle;
+  font-size: 1em;
+}
+
+.announcement a { 
+  color: #ccc; 
+}
+
+.announcement a:hover {
+  color: #ffb74b;
+}
